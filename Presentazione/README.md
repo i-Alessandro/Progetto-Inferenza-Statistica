@@ -4,8 +4,8 @@ Questa cartella contiene la presentazione per il mio progetto su [inserire argom
 
 ## File della Presentazione
 
-- [presentazione.pdf](link-alle-diapositive-della-presentazione)
-- [presentazione.tex](link-allo-script-della-presentazione)
+- [Presentazione (PDF)](presentazione.pdf)
+- [Presentazione (PDF)](presentazione.tex)
 - [Risorse Aggiuntive](link-alle-risorse-aggiuntive)
 
 ## Descrizione
@@ -20,12 +20,12 @@ In questo progetto, esploriamo [descrivere brevemente l'argomento del progetto e
 
 ## Contributi
 
-Se desideri contribuire a questo progetto, segui le linee guida in [CONTRIBUTING.md](link-alle-linee-guida-per-i-contributi).
+Se desideri contribuire a questo progetto, contattaci.
 
 ## Licenza
 
-Questo progetto è concesso in licenza con la [LICENSE](link-al-file-della-licenza).
+Questo progetto è concesso in licenza con la [LICENSE MIT](../LICENSE).
 
 ## Contatti
 
-Se hai domande o suggerimenti, non esitare a contattaci all'indirizzo [tua-email@example.com].
+Se hai domande o suggerimenti, non esitare a contattaci.

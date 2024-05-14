@@ -1,15 +1,10 @@
-# Cartella src
+# Cartella Code
 
 Questa cartella contiene il codice sorgente del progetto. Qui troverai tutti i file sorgente necessari per compilare ed eseguire l'applicazione.
 
 ## Struttura della cartella
 
-La cartella "src" è organizzata in modo da mantenere una struttura pulita e ben organizzata. Di seguito è riportata una panoramica della struttura della cartella:
-
-- `main`: Contiene il codice principale dell'applicazione. Qui troverai il punto di ingresso dell'applicazione e i file sorgente principali.
-- `lib`: Contiene le librerie esterne utilizzate nel progetto. Assicurati di includere tutte le dipendenze necessarie in questa cartella.
-- `utils`: Contiene file di utilità e funzioni di supporto che possono essere utilizzate in tutto il progetto.
-- `tests`: Contiene i file di test per verificare la correttezza del codice.
+La cartella `Code/` è organizzata in modo da mantenere una struttura pulita e ben organizzata. Di seguito è riportata una panoramica della struttura della cartella:
 
 ## Come compilare ed eseguire il codice
 
@@ -17,7 +12,7 @@ Per compilare ed eseguire il codice, segui i seguenti passaggi:
 
 ## Contribuire
 
-Se desideri contribuire a questo progetto, ti invitiamo a seguire le seguenti linee guida:
+Se desideri contribuire a questo progetto, ti invitiamo a contattarci.
 
 
 ## Problemi e domande
