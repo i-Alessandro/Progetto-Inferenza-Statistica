@@ -4,17 +4,16 @@ Questo repository contiene il dataset utilizzato nel progetto di Inferenza Stati
 
 ## Descrizione del Dataset
 
-Il dataset è composto da [inserire numero di file] file, ognuno contenente [inserire descrizione del contenuto]. I dati sono stati raccolti da [inserire fonte dei dati] e sono relativi a [inserire periodo di riferimento].
+Il dataset è composto da 1 file, contenente una versione anonimizzata di alcuni dati di studenti del Politecnico di Milano. I dati sono stati raccolti dal Politecnico di Milano e sono relativi al periodo 2010-2023.
 
 ## Struttura della Cartella
 
-- `file1.csv`: Descrizione del file 1.
-- `file2.csv`: Descrizione del file 2.
-- ...
+- `Dropout20240226_IngMate.xlsx`: Il database che abbiamo utilizzato.
+- `Legend.md` : Un file Markdown creato per esplicitare le variabili presenti nel dataset di riferimento.
 
 ## Utilizzo del Dataset
 
-Per utilizzare il dataset, è possibile scaricare i file direttamente da questo repository. È consigliato leggere attentamente la documentazione fornita per comprendere la struttura dei dati e le modalità di utilizzo.
+Per utilizzare il dataset, è necessario contattare i professori di riferimento presso il Politecnico di Milano, in quanto non siamo autorizzati a divulgare il suo contenuto per questioni di privacy.
 
 ## Contributi
 
@@ -22,4 +21,4 @@ Sono benvenuti contributi per migliorare il dataset o aggiungere nuovi dati corr
 
 ## Contatti
 
-Per qualsiasi domanda o suggerimento, contattare [inserire nome e indirizzo email].
+Per qualsiasi domanda o suggerimento, contattare Alessandro, Giulia, Pietro o Sofia.

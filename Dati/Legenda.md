@@ -4,14 +4,14 @@
 | career_anonymous_id        | Un codice anonimizzato unico per studente    |       |
 | career_start_ay            | Anno accademico di inizio degli studi        |       |
 | stud_admission_score       | Punteggio dello studente all'esame di ingresso TOL |       |
-| stud_career_admission_age  |                                             |       |
-| stud_career_degree_changed | Flag nel caso lo studente abbia cambiato corso di studi al PoliMi |       |
-| stud_career_degree_name    |                                             |       |
-| stud_career_status         |                                             |       |
-| stud_gender                |                                             |       |
-| dropout                    |                                             |       |
-| previousStudies            |                                             |       |
-| origins                    |                                             |       |
+| stud_career_admission_age  | Età dello studente all'ammissione                                            |      |
+| stud_career_degree_changed | Flag nel caso lo studente abbia cambiato corso di studi al PoliMi | TRUE - FALSE      |
+| stud_career_degree_name    | Nome della facoltà alla quale lo studente è iscritto    | Ingegneria Matematica       |
+| stud_career_status         |                                           |       |
+| stud_gender                | Sesso dello studente         | M - F      |
+| dropout                    | Flag nel caso il corso sia stato abbandonato | TRUE - FALSE  |
+| previousStudies            | Indirizzo generico degli studi superiori  | Classico - Scientifico - Tecnico - etc.      |
+| origins                    |                                             | Milanese - Pendolare - Fuori sede - Straniero      |
 | income_bracket_normalized_on4 |                                          |       |
 | exa_cfu_pass               |                                             |       |
 | exa_grade_average          |                                             |       |

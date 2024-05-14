@@ -7,7 +7,7 @@ setwd("C:/Users/alewi/Documents/University/HKUST & PoliMi/II Semestre/Inferenza 
 ################################################################################
 
 #Creazione del Dataframe
-Data <- read_excel("./Dati/Dropout20240226_IngMate.xlsx")
+Data <- read_excel("./Dati/ESPERIMENTI.xlsx")
 View(Data)
 
 #Info generali sul Dataframe
@@ -27,7 +27,10 @@ dev.new()
 pairs(test[, c('stud_admission_score', 'exa_grade_average')], pch=16)
 
 #Un Primo Modello Lineare per il lavoro. 
-g = lm( exa_grade_average ~ stud_admission_score + exa_cfu_pass + exa_avg_attempts + highschool_grade) #var risposta ~ somma covariate, dataset
+g = lm( exa_grade_average ~ stud_admission_score + exa_cfu_pass + exa_avg_attempts + highschool_grade + gender_binary*stud_admission_score + gender_binary*exa_cfu_pass + gender_binary*exa_avg_attempts + gender_binary*highschool_grade)
 summary( g )
+
+h = lm( exa_grade_average ~ stud_admission_score + highschool_grade + check_fascia_alta +  I(stud_admission_score * check_fascia_alta) + I(highschool_grade * check_fascia_alta))
+summary(h)
 
       
