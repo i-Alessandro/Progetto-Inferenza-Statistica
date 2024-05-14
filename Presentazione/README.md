@@ -5,7 +5,7 @@ Questa cartella contiene la presentazione per il mio progetto su [inserire argom
 ## File della Presentazione
 
 - [Presentazione (PDF)](presentazione.pdf)
-- [Presentazione (PDF)](presentazione.tex)
+- [Presentazione (TEX)](presentazione.tex)
 - [Risorse Aggiuntive](link-alle-risorse-aggiuntive)
 
 ## Descrizione
