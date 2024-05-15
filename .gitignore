@@ -52,3 +52,4 @@ rsconnect/
 *.synctex.gz
 Dati/ESPERIMENTI.xlsx
 Dati/~$ESPERIMENTI.xlsx
+*.Rmd
