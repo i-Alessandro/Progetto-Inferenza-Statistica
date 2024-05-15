@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Librerie
 
-```{r, warning=FALSE}
+```{r, results='hide'}
 library(readxl)
 library(dplyr)
 library( faraway )
@@ -26,8 +26,6 @@ library(corrplot)
 
 Prima di tutto definiamo la working directory:
 
-`{setwd("C:/Users/alewi/Documents/University/HKUST & PoliMi/II Semestre/Inferenza Statistica/Progetto")}`
-
 IMPORTANTE! Cambiare la directoy a seconda del pc.
 
 Importiamo il Dataset, presente nella cartella `Dati/`:
@@ -35,7 +33,7 @@ Importiamo il Dataset, presente nella cartella `Dati/`:
 ```{r}
 setwd("C:/Users/alewi/Documents/University/HKUST & PoliMi/II Semestre/Inferenza Statistica/Progetto")
 df <- read_excel("./Dati/Dropout20240226_IngMate.xlsx")
-View(df)
+#View(df)
 ```
 
 ## Regressione Logistica
@@ -55,7 +53,7 @@ Selezioniamo dal dataset le variabili numeriche:
 ```{r}
 numerical_vars <- sapply(filtered_df, is.numeric)  # Find numeric columns
 numerical_df <- filtered_df[, numerical_vars]  # Subset dataframe with numeric columns
-
+numerical_df = na.omit(numerical_df)
 ```
 
 Osserviamo se esistono correlazioni significative fra i dati numerici:
@@ -71,6 +69,7 @@ Effettuiamo la regressione logistica fra le variabili numeriche del dataset:
 # Create a formula for linear model
 formula <- as.formula(paste("dropout ~", paste(names(numerical_df[,-which(names(numerical_df) == "dropout")]), collapse = " + ")))
 
+
 # Fit the linear model
 model <- glm(formula, data = numerical_df)
 
@@ -82,7 +81,7 @@ Cerchiamo di trovare il miglior modello con un Automatic Selection Method:
 
 ```{r}
 x = model.matrix( model ) [ , -1 ]
-y = na.omit(numerical_df)$dropout
+y = numerical_df$dropout
 
 adjr = leaps( x, y, method = "adjr2" )
 names(adjr)
