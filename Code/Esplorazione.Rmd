@@ -2,7 +2,7 @@
 title: "Esplorazione"
 author: "Alessandro Wiget"
 date: "`r Sys.Date()`"
-output: html_document
+output: github_document
 ---
 
 ```{r setup, include=FALSE}

@@ -1,5 +1,6 @@
-Progetto Inferenza Statistica
+Regressione Logistica
 ================
+Alessandro Wiget
 2024-05-15
 
 ## Librerie
@@ -59,7 +60,7 @@ X = numerical_df[, -4]
 corrplot(cor(X), method='color')
 ```
 
-![](FileMarkdown_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](Regressione_logistica_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 Effettuiamo la regressione logistica fra le variabili numeriche del
 dataset:
@@ -378,7 +379,7 @@ plot(new_data$exa_cfu_pass, predicted_values, main="Predizione di dropout / CFU 
      ylab="Predizione Dropout")
 ```
 
-![](FileMarkdown_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](Regressione_logistica_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
 ``` r
 plot(new_data$exa_grade_average, predicted_values, main="Predizione di dropout / Media pesata nel primo semestre", 
@@ -386,4 +387,4 @@ plot(new_data$exa_grade_average, predicted_values, main="Predizione di dropout /
      ylab="Predizione Dropout")
 ```
 
-![](FileMarkdown_files/figure-gfm/unnamed-chunk-12-2.png)<!-- -->
+![](Regressione_logistica_files/figure-gfm/unnamed-chunk-12-2.png)<!-- -->
