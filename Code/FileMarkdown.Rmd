@@ -1,6 +1,6 @@
 ---
 title: "Progetto Inferenza Statistica"
-output: html_document
+output: rmarkdown::github_document
 date: "`r Sys.Date()`"
 ---
 
