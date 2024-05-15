@@ -20,6 +20,7 @@ library( GGally)
 library(BAS)
 library(rgl)
 library(corrplot)
+library(pscl)
 ```
 
 ## Il Dataset
@@ -58,8 +59,8 @@ numerical_df = na.omit(numerical_df)
 
 Osserviamo se esistono correlazioni significative fra i dati numerici:
 
-```{r, echo=FALSE}
-X = numerical_df[, -5]
+```{r}
+X = numerical_df[, -4]
 corrplot(cor(X), method='color')
 ```
 
@@ -67,7 +68,8 @@ Effettuiamo la regressione logistica fra le variabili numeriche del dataset:
 
 ```{r}
 # Create a formula for linear model
-formula <- as.formula(paste("dropout ~", paste(names(numerical_df[,-which(names(numerical_df) == "dropout")]), collapse = " + ")))
+covariate <- (paste("dropout ~", paste(names(numerical_df[,-which(names(numerical_df) == "dropout")]), collapse = " + ")))
+
 
 
 # Fit the linear model
@@ -90,7 +92,7 @@ adjr
 bestmodel_adjr2_ind = which.max( adjr$adjr2 )
 adjr$which[ bestmodel_adjr2_ind, ] 
 
-maxadjr(adjr,15 )
+maxadjr(adjr,50)
 ```
 
 Decidiamo di utilizzare il modello numero 11, dal momento che presenta 6 features, perdendo solamente 0.002 di adjr2 rispetto al caso ottimale.
@@ -100,11 +102,17 @@ Il modello diventa dunque:
 ```{r}
 # Assuming 'df' is your dataframe and 'target' is your target variable
 # Select only the columns you're interested in
-selected_df <- numerical_df[, c(1,3,4,5,6,9,10)]
+selected_df <- numerical_df[, c(4,5,6,9,10)]
 
 # Create a formula for the model
 # This assumes that the first column is the target variable
-formula <- as.formula(paste("dropout ~", paste(names(selected_df[,-which(names(selected_df) == "dropout")]), collapse = " + ")))
+covariate <- paste("dropout ~", paste(names(selected_df[,-which(names(selected_df) == "dropout")]), collapse = " + "))
+
+interazioni = " + exa_cfu_pass * exa_grade_average"
+
+rimuovere = "- exa_cfu_pass"
+
+formula = as.formula(paste(covariate, interazioni, rimuovere))
 
 # Fit the model
 model_opt <- glm(formula, data = selected_df, family = binomial)
@@ -112,6 +120,15 @@ model_opt <- glm(formula, data = selected_df, family = binomial)
 # Print the summary of the model
 summary(model_opt)
 ```
+
+```{r}
+# Assuming 'model' is your fitted GLM
+pseudo_r2 <- pR2(model_opt)
+
+pseudo_r2
+```
+
+Confrontando i valori dell'adjusted R\^2 vediamo che l'aggiunta di una covariata data dal termine di interazioni, fa aumentare l'indice di un millesimo. Dunque non risulta vantaggioso il tradeoff e manteniamo il modello precedente.
 
 Applichiamo adesso il modello lineare sugli studenti che non hanno ancora completato il loro percorso universitario:
 
