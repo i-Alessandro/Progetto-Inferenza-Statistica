@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Librerie
 
-```{r, results='hide'}
+```{r, results='hide', warning= FALSE, message=FALSE}
 library(readxl)
 library(dplyr)
 library( faraway )
@@ -21,6 +21,7 @@ library( GGally)
 library(BAS)
 library(rgl)
 library(corrplot)
+library(pscl)
 ```
 
 ## Considerazioni Iniziali
@@ -32,7 +33,6 @@ setwd("C:/Users/alewi/Documents/University/HKUST & PoliMi/II Semestre/Inferenza 
 df <- read_excel("./Dati/Dropout20240226_IngMate.xlsx")
 #View(df)
 #summary(df)
-ggpairs(df)
 ```
 
 Omettiamo dal dataset le colonne che contengono l'id anonimizzato degli studenti, il dato career_tim (che è doppio) e un id che identifica quando gli studenti si sono iscritti al Politecnico:
