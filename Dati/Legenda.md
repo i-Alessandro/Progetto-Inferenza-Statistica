@@ -1,7 +1,7 @@
 ## Legenda delle Feature
 | Feature                     | Descrizione della nuova feature            | Range |
 |----------------------------|---------------------------------------------|-------|
-| career_anonymous_id        | Un codice anonimizzato unico per studente    |       |
+| career_anonymous_id        | Un codice anonimizzato unico per studente    | un codice      |
 | career_start_ay            | Anno accademico di inizio degli studi        |       |
 | stud_admission_score       | Punteggio dello studente all'esame di ingresso TOL |       |
 | stud_career_admission_age  | Età dello studente all'ammissione                                            |      |
