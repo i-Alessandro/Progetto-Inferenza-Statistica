@@ -6,6 +6,11 @@ date: "`r Sys.Date()`"
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Librerie
+
+```{r, warning=FALSE}
 library(readxl)
 library(dplyr)
 library( faraway )
@@ -27,17 +32,17 @@ IMPORTANTE! Cambiare la directoy a seconda del pc.
 
 Importiamo il Dataset, presente nella cartella `Dati/`:
 
-```{r setup, include=FALSE}
+```{r}
 setwd("C:/Users/alewi/Documents/University/HKUST & PoliMi/II Semestre/Inferenza Statistica/Progetto")
 df <- read_excel("./Dati/Dropout20240226_IngMate.xlsx")
-View(Data)
+View(df)
 ```
 
 ## Regressione Logistica
 
 Consideriamo innanzitutto solo gli studenti con carriere terminate, cioè o che si sono laureati o che hanno abbandonato il corso di studio:
 
-```{r setup}
+```{r}
 df$career_anonymous_id <- NULL
 df$career_time <- NULL
 df$stud_career_degree_start_id <- NULL
@@ -47,7 +52,7 @@ filtered_df <- df %>% filter(stud_career_status != 'A')
 
 Selezioniamo dal dataset le variabili numeriche:
 
-```{r setup}
+```{r}
 numerical_vars <- sapply(filtered_df, is.numeric)  # Find numeric columns
 numerical_df <- filtered_df[, numerical_vars]  # Subset dataframe with numeric columns
 
@@ -74,6 +79,7 @@ summary(model)
 ```
 
 Cerchiamo di trovare il miglior modello con un Automatic Selection Method:
+
 ```{r}
 x = model.matrix( model ) [ , -1 ]
 y = na.omit(numerical_df)$dropout
@@ -87,9 +93,10 @@ adjr$which[ bestmodel_adjr2_ind, ]
 
 maxadjr(adjr,15 )
 ```
-Decidiamo di utilizzare il modello numero 11, dal momento che presenta 6 features, perdendo solamente 0.002 di adjr2 rispetto al caso ottimale. 
 
-Il modello diventa dunque: 
+Decidiamo di utilizzare il modello numero 11, dal momento che presenta 6 features, perdendo solamente 0.002 di adjr2 rispetto al caso ottimale.
+
+Il modello diventa dunque:
 
 ```{r}
 # Assuming 'df' is your dataframe and 'target' is your target variable
@@ -106,7 +113,8 @@ model_opt <- glm(formula, data = selected_df, family = binomial)
 # Print the summary of the model
 summary(model_opt)
 ```
-Applichiamo adesso il modello lineare sugli studenti che non hanno ancora completato il loro percorso universitario: 
+
+Applichiamo adesso il modello lineare sugli studenti che non hanno ancora completato il loro percorso universitario:
 
 ```{r}
 new_data = filtered_df <- df %>% filter(stud_career_status == 'A')
@@ -120,12 +128,3 @@ View(new_data)
 predicted_values <- predict(model_opt, newdata = new_data, type = "response")
 plot(new_data$career_time_conv, predicted_values)
 ```
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
