@@ -24,7 +24,7 @@ library(corrplot)
 library(pscl)
 ```
 
-## Considerazioni Iniziali
+##ESPLORAZIONE DATASET E ANALISI QUALITATIVA INIZIALE
 
 Importiamo il Dataset, presente nella cartella `Dati/`:
 
