@@ -22,6 +22,7 @@ library(BAS)
 library(rgl)
 library(corrplot)
 library(pscl)
+library(plm)
 ```
 
 ## Il Dataset
@@ -33,8 +34,8 @@ IMPORTANTE! Cambiare la directoy a seconda del pc.
 Importiamo il Dataset, presente nella cartella `Dati/`:
 
 ```{r}
-setwd("C:/Users/alewi/Documents/University/HKUST & PoliMi/II Semestre/Inferenza Statistica/Progetto")
-df <- read_excel("./Dati/Dropout20240226_IngMate.xlsx")
+setwd("/home/alessandro/Inferenza Statistica/Progetto/Code")
+df <- read_excel("../Dati/Dropout20240226_IngMate.xlsx")
 #View(df)
 ```
 
@@ -46,6 +47,16 @@ Consideriamo innanzitutto solo gli studenti con carriere terminate, cioè o che 
 df$career_anonymous_id <- NULL
 df$career_time <- NULL
 df$stud_career_degree_start_id <- NULL
+df$stud_career_degree_changed <- NULL
+df$stud_career_degree_name <- NULL
+df$stud_ofa_flst <- NULL
+df$stud_ofa_fltp <- NULL
+df$stud_career_degree_area <- NULL
+df$stud_career_degree_code <- NULL
+df$stud_career_degree_code_CdS <-NULL
+df$highschool_type <- NULL
+df$highschool_type_code <- NULL #abbiamo cancellato queste variabili operche possiamo separare fra classico, scientifico e altro con un'altra variabile
+df$stud_admis_convent_start_dt <- NULL
 
 filtered_df <- df %>% filter(stud_career_status != 'A')
 ```
@@ -72,7 +83,7 @@ Effettuiamo la regressione logistica fra le variabili numeriche del dataset:
 formula <- as.formula(paste("dropout ~", paste(names(numerical_df[,-which(names(numerical_df) == "dropout")]), collapse = " + ")))
 
 # Fit the linear model
-model <- glm(formula, data = numerical_df)
+model <- glm(formula, data = numerical_df, family=binomial)
 
 # Print the summary of the model
 summary(model)
@@ -178,18 +189,244 @@ pseudo_r2['McFadden']
 
 Confrontando i valori dell'adjusted R\^2 vediamo che l'aggiunta di una covariata data dal termine di interazioni, fa aumentare l'indice di pochi millesimi. Dunque non risulta vantaggioso il tradeoff e manteniamo il modello precedente.
 
-## Predizione
+## Variabili Categoriche:
+```{r}
+filtered_df <- df %>% filter(stud_career_status != 'A')
+filtered_df_no_na = na.omit(filtered_df)
 
-Applichiamo adesso il modello lineare sugli studenti che non hanno ancora completato il loro percorso universitario:
+new_df <- selected_df
+
+new_df$stud_gender = factor(filtered_df_no_na$stud_gender, ordered = F)
+new_df$previousStudies = factor(filtered_df_no_na$previousStudies, ordered = F)
+new_df$origins = factor(filtered_df_no_na$origins, ordered = F)
+new_df$income_bracket_normalized_on4 = factor(filtered_df_no_na$income_bracket_normalized_on4, ordered = F)
+new_df$dropped_on_180 = factor(filtered_df_no_na$dropped_on_180, ordered = F)
+# Create a formula for the model
+# This assumes that the first column is the target variable
+covariate <- paste("dropout ~", paste(names(new_df[,-which(names(new_df) == "dropout")]), collapse = " + "))
+
+formula = as.formula(paste(covariate))
+
+# Fit the model
+model_opt <- glm(formula, data = new_df, family = binomial)
+
+# Print the summary of the model
+summary(model_opt)
+
+# adjr2 per il modello con interazione: (Usiamo McFadden)
+pseudo_r2 <- pR2(model_opt)
+
+pseudo_r2['McFadden']
+```
+Cerchiamo di migliorare con una ricerca eliminando covariate:
+
+```{r, message=FALSE}
+covariate <- paste("dropout ~", paste(names(new_df[,-which(names(new_df) == "dropout")]), collapse = " + "))
+
+delete = "- dropped_on_180 - origins -income_bracket_normalized_on4 "
+
+formula = as.formula(paste(covariate, delete))
+
+# Fit the model
+model_opt <- glm(formula, data = new_df, family = binomial)
+
+# Print the summary of the model
+summary(model_opt)
+
+# adjr2 per il modello con interazione: (Usiamo McFadden)
+pseudo_r2 <- pR2(model_opt)
+
+pseudo_r2['McFadden']
+```
+Introduciamo adesso delle interazioni per vedere se possiamo migliorare il risultato: 
+
+```{r, message=FALSE}
+covariate <- paste("dropout ~", paste(names(new_df[,-which(names(new_df) == "dropout")]), collapse = " + "))
+
+delete = "- dropped_on_180 - origins -income_bracket_normalized_on4"
+
+interactions = "+stud_gender*exa_cfu_pass +stud_gender*exa_grade_average +stud_gender*highschool_grade +stud_gender*career_time_conv"
+
+formula = as.formula(paste(covariate, interactions ,delete))
+
+# Fit the model
+model_opt <- glm(formula, data = new_df, family = binomial)
+
+# Print the summary of the model
+summary(model_opt)
+
+# adjr2 per il modello con interazione: (Usiamo McFadden)
+pseudo_r2 <- pR2(model_opt)
+
+pseudo_r2['McFadden']
+```
+Faccio adesso un test per vedere il massimo teorico per quanto riguarda l'adjR2, aggiungendo quasi tutte le variabili possibili e semplificando con leaps():
+
+```{r, message=FALSE}
+covariate <- paste("dropout ~", paste(names(new_df[,-which(names(new_df) == "dropout")]), collapse = " + "))
+
+interactions = "+income_bracket_normalized_on4*exa_cfu_pass +income_bracket_normalized_on4*exa_grade_average + income_bracket_normalized_on4*highschool_grade + income_bracket_normalized_on4*career_time_conv +income_bracket_normalized_on4*highschool_grade +income_bracket_normalized_on4*career_time_conv +dropped_on_180*exa_grade_average + dropped_on_180*highschool_grade + dropped_on_180*career_time_conv +dropped_on_180*highschool_grade +dropped_on_180*career_time_conv"
+
+# +stud_gender*exa_cfu_pass +stud_gender*exa_grade_average + stud_gender*highschool_grade +stud_gender*highschool_grade +stud_gender*career_time_conv   
+# +origins*exa_cfu_pass +origins*exa_grade_average + origins*highschool_grade + origins*career_time_conv +origins*highschool_grade + origins*career_time_conv
+# +previousStudies*exa_cfu_pass +previousStudies*exa_grade_average + previousStudies*highschool_grade + previousStudies*career_time_conv +previousStudies*highschool_grade +previousStudies*career_time_conv
+
+formula = as.formula(paste(covariate, interactions))
+
+# Fit the model
+model_opt <- glm(formula, data = new_df, family = binomial)
+
+# Print the summary of the model
+summary(model_opt)
+
+# adjr2 per il modello con interazione: (Usiamo McFadden)
+pseudo_r2 <- pR2(model_opt)
+
+pseudo_r2['McFadden']
+```
+```{r, message=FALSE}
+x = model.matrix( model_opt ) [ , -1 ]
+y = new_df$dropout
+
+detect.lindep(x) #"Suspicious column name(s):   exa_cfu_pass:dropped_on_180Y, exa_grade_average:dropped_on_180Y" (Cancellata la prima)
+
+adjr = leaps( x, y, method = "adjr2" )
+names(adjr)
+```
 
 ```{r}
-new_data = filtered_df <- df %>% filter(stud_career_status == 'A')
-new_data_vars <- sapply(new_data, is.numeric)  # Find numeric columns
-new_data <- new_data[, numerical_vars]  # Subset dataframe with numeric columns
-new_data = new_data[,c(-4,-8)]
-new_data = na.omit(new_data)
+bestmodel_adjr2_ind = which.max( adjr$adjr2 )
+adjr$which[ bestmodel_adjr2_ind, ] 
 
-#View(new_data)
+maxadjr(adjr,15)
+```
+
+```{r}
+leap_matrix = data.frame(x[, c(1,2,3,4,5,6,8,12,13,14,15,22,23,24,25,26,27,28)])
+
+leap_matrix$dropout = new_df$dropout
+
+covariate <- paste("dropout ~", paste(names(leap_matrix[,-which(names(leap_matrix) == "dropout")]), collapse = " + "))
+
+formula = as.formula(paste(covariate))
+
+# Fit the model
+model_leap <- glm(formula, data = leap_matrix, family = binomial)
+
+# Print the summary of the model
+summary(model_leap)
+
+# adjr2 per il modello con interazione: (Usiamo McFadden)
+pseudo_r2 <- pR2(model_leap)
+
+pseudo_r2['McFadden']
+
+```
+## Ultima Idea
+Fra il modello con tutte le variabili numeriche e  quello con solo 4, accumuliamo un notevole AIC, proviamo a mantenere tutte le variabili numeriche e ad aggiungere le categorie: 
+
+```{r}
+filtered_df <- df %>% filter(stud_career_status != 'A')
+filtered_df_no_na = na.omit(filtered_df)
+
+numerical_vars <- sapply(filtered_df, is.numeric)  # Find numeric columns
+numerical_df <- filtered_df[, numerical_vars]  # Subset dataframe with numeric columns
+general_df = na.omit(numerical_df)
+
+general_df$stud_gender = factor(filtered_df_no_na$stud_gender, ordered = F)
+general_df$previousStudies = factor(filtered_df_no_na$previousStudies, ordered = F)
+general_df$origins = factor(filtered_df_no_na$origins, ordered = F)
+general_df$income_bracket_normalized_on4 = factor(filtered_df_no_na$income_bracket_normalized_on4, ordered = F)
+general_df$dropped_on_180 = factor(filtered_df_no_na$dropped_on_180, ordered = F)
+
+covariate <- paste("dropout ~", paste(names(general_df[,-which(names(general_df) == "dropout")]), collapse = " + "))
+
+formula = as.formula(paste(covariate))
+
+# Fit the model
+model_opt <- glm(formula, data = general_df, family = binomial)
+
+# Print the summary of the model
+summary(model_opt)
+
+# adjr2 per il modello con interazione: (Usiamo McFadden)
+pseudo_r2 <- pR2(model_opt)
+
+pseudo_r2['McFadden']
+```
+
+
+```{r, message=FALSE}
+x = model.matrix( model_opt ) [ , -1 ]
+y = new_df$dropout
+
+detect.lindep(x) #"Suspicious column name(s):   exa_cfu_pass:dropped_on_180Y, exa_grade_average:dropped_on_180Y" (Cancellata la prima)
+
+adjr = leaps( x, y, method = "adjr2" )
+names(adjr)
+```
+
+```{r}
+bestmodel_adjr2_ind = which.max( adjr$adjr2 )
+adjr$which[ bestmodel_adjr2_ind, ] 
+
+maxadjr(adjr,15)
+```
+Siamo riusciti quindi a raggiungere un adjR2 = 0.652, meglio, per ora, non risulta possibile. 
+
+Qui sotto il modello: 
+
+```{r}
+leap_matrix = data.frame(x[, c(1,2,3,4,5,6,7,8,9,10,11,13,17,18,19,20 )])
+leap_matrix$dropout = new_df$dropout
+
+covariate <- paste("dropout ~", paste(names(leap_matrix[,-which(names(leap_matrix) == "dropout")]), collapse = " + "))
+
+formula = as.formula(paste(covariate))
+
+# Fit the model
+model_leap <- glm(formula, data = leap_matrix, family = binomial)
+
+# Print the summary of the model
+summary(model_leap)
+
+# adjr2 per il modello con interazione: (Usiamo McFadden)
+pseudo_r2 <- pR2(model_leap)
+
+pseudo_r2['McFadden']
+
+```
+
+## Predizione
+
+Applichiamo adesso il modello lineare sugli studenti che non hanno ancora completato il loro percorso universitario: 
+(NON FUNZIONA, va sistemato)
+
+```{r}
+if(FALSE){
+  # This is a block comment in R.
+  # You can write multiple lines of comments here.
+  # None of these lines will be executed.
+
+filtered_df <- df %>% filter(stud_career_status == 'A')
+filtered_df$dropout <-NULL
+filtered_df$stud_career_end_ay <- NULL
+filtered_df$stud_career_end_date <- NULL
+filtered_df_no_na = na.omit(filtered_df)
+
+new_data <- filtered_df_no_na
+
+new_data$stud_gender = factor(filtered_df_no_na$stud_gender, ordered = F)
+new_data$previousStudies = factor(filtered_df_no_na$previousStudies, ordered = F)
+new_data$origins = factor(filtered_df_no_na$origins, ordered = F)
+new_data$income_bracket_normalized_on4 = factor(filtered_df_no_na$income_bracket_normalized_on4, ordered = F)
+new_data$dropped_on_180 = factor(filtered_df_no_na$dropped_on_180, ordered = F)
+
+new_data$dropout <- NA
+new_data <- new_data[names(new_df)]
+new_data$dropout <- NULL
+
+#new_data$dropped_on_180 <- NULL 
 
 predicted_values <- predict(model_opt, newdata = new_data, type = "response")
 plot(new_data$exa_cfu_pass, predicted_values, main="Predizione di dropout / CFU acquisiti nel primo semestre", 
@@ -199,4 +436,5 @@ plot(new_data$exa_cfu_pass, predicted_values, main="Predizione di dropout / CFU 
 plot(new_data$exa_grade_average, predicted_values, main="Predizione di dropout / Media pesata nel primo semestre", 
      xlab="media pesata", 
      ylab="Predizione Dropout")
+}
 ```
