@@ -87,7 +87,7 @@ ggpairs(data = numerical_df, title ="Relationships between variables",
         lower = list(continuous=wrap("points", alpha = 0.5, size=0.1)))
 ```
 
-Le variabili sono tante e R ci indica che le correlazioni rilevanti sono diverse. E' necessario semplificare il modello per iniziare l'interpretazione.
+Le variabili sono tante e R ci indica che le correlazioni rilevanti sono diverse. E' necessario semplificare il modello per iniziare l'interpretazione. Inoltre non notiamo alcun pattern lineare all'inizio.
 
 Osserviamo se esistono correlazioni significative fra i dati numerici, in un altro modo:
 
