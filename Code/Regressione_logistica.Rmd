@@ -78,7 +78,7 @@ model <- glm(formula, data = numerical_df)
 summary(model)
 ```
 
-Cerchiamo di trovare il miglior modello con un Automatic Selection Method. Massimizziamo l'adjr2 con la funzione `leaps()`, ovvero un algoritmo Branch and Bound per trovare tali modelli. 
+Cerchiamo di trovare il miglior modello con un Automatic Selection Method. Massimizziamo l'adjr2 con la funzione `leaps()`, ovvero un algoritmo Branch and Bound per trovare tali modelli.
 
 ```{r, message=FALSE}
 x = model.matrix( model ) [ , -1 ]
@@ -87,6 +87,7 @@ y = numerical_df$dropout
 adjr = leaps( x, y, method = "adjr2" )
 names(adjr)
 ```
+
 ```{r}
 bestmodel_adjr2_ind = which.max( adjr$adjr2 )
 adjr$which[ bestmodel_adjr2_ind, ] 
@@ -94,9 +95,10 @@ adjr$which[ bestmodel_adjr2_ind, ]
 maxadjr(adjr,50)
 ```
 
-Dal momento che non è presente una variazione significativa dell'adjr2 dei primi modelli, cerchiamo dunque di minimizzare il numero di variabili utilizzate. La scelta ricade dunque sul modello che contiene le features delle colonne `4,5,8,9`. 
+Dal momento che non è presente una variazione significativa dell'adjr2 dei primi modelli, cerchiamo dunque di minimizzare il numero di variabili utilizzate. La scelta ricade dunque sul modello che contiene le features delle colonne `4,5,8,9`.
 
 Il modello diventa dunque:
+
 ```{r}
 # Assuming 'df' is your dataframe and 'target' is your target variable
 # Select only the columns you're interested in
@@ -117,7 +119,9 @@ pseudo_r2 <- pR2(model_opt)
 
 pseudo_r2['McFadden']
 ```
-Riferendoci alla tabella delle covariate presentata in precedenza, vogliamo capire se è possibile migliorare il modello introducendo una interazione fra le covariate che sono più correlate, ovvero `exa_cfu_pass` e `exa_grade_average`: 
+
+Riferendoci alla tabella delle covariate presentata in precedenza, vogliamo capire se è possibile migliorare il modello introducendo una interazione fra le covariate che sono più correlate, ovvero `exa_cfu_pass` e `exa_grade_average`:
+
 ```{r}
 # Assuming 'df' is your dataframe and 'target' is your target variable
 # Select only the columns you're interested in
@@ -142,7 +146,9 @@ pseudo_r2 <- pR2(model_opt)
 
 pseudo_r2['McFadden']
 ```
-Notiamo un miglioramento dell'AIC, tuttavia adesso la feature `exa_cfu_pass` risulta superflua, procediamo quindi ad eliminarla: 
+
+Notiamo un miglioramento dell'AIC, tuttavia adesso la feature `exa_cfu_pass` risulta superflua, procediamo quindi ad eliminarla:
+
 ```{r}
 # Assuming 'df' is your dataframe and 'target' is your target variable
 # Select only the columns you're interested in
@@ -170,7 +176,7 @@ pseudo_r2 <- pR2(model_opt)
 pseudo_r2['McFadden']
 ```
 
-Confrontando i valori dell'adjusted R^2 vediamo che l'aggiunta di una covariata data dal termine di interazioni, fa aumentare l'indice di pochi millesimi. Dunque non risulta vantaggioso il tradeoff e manteniamo il modello precedente.
+Confrontando i valori dell'adjusted R\^2 vediamo che l'aggiunta di una covariata data dal termine di interazioni, fa aumentare l'indice di pochi millesimi. Dunque non risulta vantaggioso il tradeoff e manteniamo il modello precedente.
 
 ## Predizione
 
