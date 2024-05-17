@@ -23,6 +23,7 @@ library(rgl)
 library(corrplot)
 library(pscl)
 library(plm)
+library(glmulti)
 ```
 
 ## Il Dataset
@@ -89,21 +90,28 @@ model <- glm(formula, data = numerical_df, family=binomial)
 summary(model)
 ```
 
-Cerchiamo di trovare il miglior modello con un Automatic Selection Method. Massimizziamo l'adjr2 con la funzione `leaps()`, ovvero un algoritmo Branch and Bound per trovare tali modelli.
+Cerchiamo di trovare il miglior modello con un Automatic Selection Method. Massimizziamo l'AIC con la funzione `glmulti()`. , presente nell'omonima libreria:
 
 ```{r, message=FALSE}
-x = model.matrix( model ) [ , -1 ]
-y = numerical_df$dropout
+glmulti.logistic.out <-
+    glmulti(formula, data = numerical_df,
+            level = 1,               # No interaction considered
+            method = "h",            # Exhaustive approach
+            crit = "aic",            # AIC as criteria
+            confsetsize = 5,         # Keep 5 best models
+            plotty = F, report = F,  # No plot or interim reports
+            fitfunction = "glm",     # glm function
+            family = binomial)       # binomial family for logistic regression
 
-adjr = leaps( x, y, method = "adjr2" )
-names(adjr)
+## Show 5 best models (Use @ instead of $ for an S4 object)
+glmulti.logistic.out@formulas
 ```
-
+Vediamo un summary per il modello decretato "migliore":
 ```{r}
-bestmodel_adjr2_ind = which.max( adjr$adjr2 )
-adjr$which[ bestmodel_adjr2_ind, ] 
+summary(glm("dropout ~ 1 + career_start_ay + stud_career_admission_age + exa_cfu_pass + 
+    exa_grade_average + stud_career_end_ay + highschool_grade + 
+    career_time_conv", data=numerical_df))
 
-maxadjr(adjr,50)
 ```
 
 Dal momento che non è presente una variazione significativa dell'adjr2 dei primi modelli, cerchiamo dunque di minimizzare il numero di variabili utilizzate. La scelta ricade dunque sul modello che contiene le features delle colonne `4,5,8,9`.

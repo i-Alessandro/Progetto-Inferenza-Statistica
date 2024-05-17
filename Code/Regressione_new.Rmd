@@ -1,0 +1,223 @@
+---
+title: "Regressione_new"
+author: "Alessandro Wiget"
+date: "`r Sys.Date()`"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Librerie
+
+```{r, results='hide', warning= FALSE, message=FALSE}
+library(readxl)
+library(dplyr)
+library( faraway )
+library( leaps )
+library(MASS)
+library( GGally)
+library(BAS)
+library(rgl)
+library(corrplot)
+library(pscl)
+library(plm)
+library(glmulti)
+```
+
+## Il Dataset
+
+Prima di tutto definiamo la working directory:
+
+IMPORTANTE! Cambiare la directoy a seconda del pc.
+
+Importiamo il Dataset, presente nella cartella `Dati/`:
+
+```{r}
+setwd("/home/alessandro/Inferenza Statistica/Progetto/Code")
+df <- read_excel("../Dati/Dropout20240226_IngMate.xlsx")
+#View(df)
+```
+
+## Regressione Logistica
+
+Consideriamo innanzitutto solo gli studenti con carriere terminate, cioè o che si sono laureati o che hanno abbandonato il corso di studio:
+
+```{r}
+df$career_anonymous_id <- NULL
+df$career_time <- NULL
+df$stud_career_degree_start_id <- NULL
+df$stud_career_degree_changed <- NULL
+df$stud_career_degree_name <- NULL
+df$stud_ofa_flst <- NULL
+df$stud_ofa_fltp <- NULL
+df$stud_career_degree_area <- NULL
+df$stud_career_degree_code <- NULL
+df$stud_career_degree_code_CdS <-NULL
+df$highschool_type <- NULL
+df$highschool_type_code <- NULL #abbiamo cancellato queste variabili operche possiamo separare fra classico, scientifico e altro con un'altra variabile
+df$stud_admis_convent_start_dt <- NULL
+
+filtered_df <- df %>% filter(stud_career_status != 'A')
+```
+
+Selezioniamo dal dataset le variabili numeriche:
+
+```{r}
+numerical_vars <- sapply(filtered_df, is.numeric)  # Find numeric columns
+numerical_df <- filtered_df[, numerical_vars]  # Subset dataframe with numeric columns
+numerical_df = na.omit(numerical_df)
+```
+
+Osserviamo se esistono correlazioni significative fra i dati numerici:
+
+```{r}
+X = numerical_df[, -4]
+corrplot(cor(X), method='color')
+```
+
+
+## La Prima Regressione Logistica
+Effettuiamo la regressione logistica fra le variabili numeriche del dataset:
+
+```{r}
+# Create a formula for linear model
+formula_num <- as.formula(paste("dropout ~", paste(names(numerical_df[,-which(names(numerical_df) == "dropout")]), collapse = " + ")))
+
+# Fit the linear model
+model <- glm(formula_num, data = numerical_df, family=binomial)
+
+# Print the summary of the model
+summary(model)
+```
+
+Cerchiamo di trovare il miglior modello con un Automatic Selection Method. Massimizziamo l'AIC con la funzione `glmulti()`. , presente nell'omonima libreria:
+
+```{r, message=FALSE}
+glmulti.logistic.out <-
+    glmulti(formula_num, data = numerical_df,
+            level = 1,               # No interaction considered
+            method = "h",            # Exhaustive approach
+            crit = "aic",            # AIC as criteria
+            confsetsize = 5,         # Keep 5 best models
+            plotty = F, report = F,  # No plot or interim reports
+            fitfunction = "glm",     # glm function
+            family = binomial)       # binomial family for logistic regression
+
+## Show 5 best models (Use @ instead of $ for an S4 object)
+glmulti.logistic.out@formulas
+```
+
+Vediamo un summary per il modello decretato "migliore":
+```{r}
+summary(glm("dropout ~ 1 + career_start_ay + stud_career_admission_age + exa_cfu_pass + 
+    exa_grade_average + stud_career_end_ay + highschool_grade + 
+    career_time_conv", data=numerical_df))
+
+```
+Notiamo un enorme miglioramento nel modello, quindi lo teniamo come migliore, per ora. 
+
+## Introduzione delle Variabili Categoriche
+
+```{r}
+filtered_df <- df %>% filter(stud_career_status != 'A')
+filtered_df_no_na = na.omit(filtered_df)
+
+#Partendo dal modello di ottimo trovato prima costruisco la matrice solo con quelle covariate:
+new_df <- numerical_df
+new_df$stud_admission_score <- NULL
+new_df$exa_avg_attempts <- NULL
+
+new_df$stud_gender = factor(filtered_df_no_na$stud_gender, ordered = F)
+new_df$previousStudies = factor(filtered_df_no_na$previousStudies, ordered = F)
+new_df$origins = factor(filtered_df_no_na$origins, ordered = F)
+new_df$income_bracket_normalized_on4 = factor(filtered_df_no_na$income_bracket_normalized_on4, ordered = F)
+new_df$dropped_on_180 = factor(filtered_df_no_na$dropped_on_180, ordered = F)
+
+#Costruiamo un modello con tutte le variabili categoriche:
+formula_cat <- as.formula(paste("dropout ~", paste(names(new_df[,-which(names(new_df) == "dropout")]), collapse = " + ")))
+
+model <- glm(formula_cat, data = new_df, family=binomial)
+
+summary(model)
+```
+
+Proviamo a migliorarlo con `glmulti()`:
+```{r, message=FALSE}
+glmulti.logistic.out <-
+    glmulti(formula_cat, data = new_df,
+            level = 1,               # No interaction considered
+            method = "h",            # Exhaustive approach
+            crit = "aic",            # AIC as criteria
+            confsetsize = 5,         # Keep 5 best models
+            plotty = F, report = F,  # No plot or interim reports
+            fitfunction = "glm",     # glm function
+            family = binomial)       # binomial family for logistic regression
+
+## Show 5 best models (Use @ instead of $ for an S4 object)
+glmulti.logistic.out@formulas
+```
+
+Osserviamo il modello ottimale trovato: 
+```{r}
+glm_cat = glm("dropout ~ 1 + stud_gender + career_start_ay + stud_career_admission_age + 
+    exa_cfu_pass + exa_grade_average + stud_career_end_ay + highschool_grade + 
+    career_time_conv", data=new_df)
+
+summary(glm_cat)
+
+```
+
+Notiamo un effettivo miglioramento rispetto al modello che contiene solo covariate numeriche, manteniamo quindi la covariata che esprime il genere dello studente. 
+
+## Introduzione delle Interazioni
+
+Cerchiamo di capire se, introducendo delle interazioni fra le covariate del modello ottimale trovato finora siamo in grado di ridurre ulteriormente l'AIC. 
+
+Iniziamo ad introdurre le interazioni fra genere e le covariate numeriche: 
+
+```{r}
+int_df = new_df
+
+int_df$previousStudies = NULL
+int_df$origins = NULL
+int_df$income_bracket_normalized_on4 = NULL
+int_df$dropped_on_180 = NULL
+
+covariate = paste("dropout ~", paste(names(int_df[,-which(names(int_df) == "dropout")]), collapse = " + "))
+
+interazioni = "+ stud_gender*career_start_ay +  stud_gender*stud_career_admission_age + stud_gender*exa_cfu_pass + stud_gender*exa_grade_average + stud_gender*stud_career_end_ay +  stud_gender*highschool_grade  + stud_gender*career_time_conv"
+
+formula_int <- as.formula(paste(covariate, interazioni))
+
+model <- glm(formula_int, data = int_df, family=binomial)
+
+summary(model)
+```
+Ottimizziamo come al solito:
+```{r, message=FALSE}
+glmulti.logistic.out <-
+    glmulti(formula_int, data = int_df,
+            level = 1,               # No interaction considered
+            method = "h",            # Exhaustive approach
+            crit = "aic",            # AIC as criteria
+            confsetsize = 10,         # Keep 5 best models
+            plotty = F, report = F,  # No plot or interim reports
+            fitfunction = "glm",     # glm function
+            family = binomial)       # binomial family for logistic regression
+
+## Show 5 best models (Use @ instead of $ for an S4 object)
+glmulti.logistic.out@formulas
+```
+Osserviamo l'output: 
+```{r}
+glm_cat = glm("dropout ~ 1 + stud_gender + career_start_ay + stud_career_admission_age + 
+    exa_cfu_pass + exa_grade_average + stud_career_end_ay + highschool_grade + 
+    career_time_conv", data=int_df)
+
+summary(glm_cat)
+
+```
+Manteniamo il modello precedente. A quanto pare le interazioni non sono importanti per il modello e i dati, ciò è garantito anche dal fatto che nei primi 10 modelli ottimi, nessuno utilizzi le covariate introdotte. 
+
