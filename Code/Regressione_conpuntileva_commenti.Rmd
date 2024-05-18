@@ -1,6 +1,6 @@
 ---
 title: "Regressione Logistica"
-author: "Alessandro Wiget"
+author: "Alessandro Wiget, Sofia Sannino"
 date: "`r Sys.Date()`"
 output: github_document
 ---
