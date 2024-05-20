@@ -44,7 +44,7 @@ IMPORTANTE! Cambiare la directoy a seconda del pc.
 Importiamo il Dataset, presente nella cartella `Dati/`:
 
 ```{r}
-setwd("C:/Users/sanni/OneDrive/Desktop/POLIMI/3 anno/inferenza/Progetto-Inferenza-Statistica-main/Code")
+setwd("C:/Users/alewi/Documents/University/HKUST & PoliMi/II Semestre/Inferenza Statistica/Progetto/Code")
 df <- read_excel("../Dati/Dropout20240226_IngMate.xlsx")
 View(df)
 ```
@@ -377,4 +377,95 @@ predicted_classes=as.factor(predicted_classes)
 cm <- confusionMatrix(predicted_classes, test$dropout)
 print(cm)
 
+```
+## Predizione sugli studenti in corso:
+
+Costruiamo il dataset degli studenti ancora non laureati o che hanno abbandonato:
+```{r}
+attivi_df <- df %>% filter(stud_career_status == 'A')
+attivi_df$dropout <- NULL
+
+numerical_vars <- sapply(attivi_df, is.numeric)  # Find numeric columns
+attivi_df <- attivi_df[, numerical_vars]  # Subset dataframe with numeric columns
+attivi_df = na.omit(attivi_df)
+
+attivi_df = attivi_df[which(!((attivi_df$career_time_conv > 1000 & attivi_df$exa_cfu_pass==0) | attivi_df$career_start_ay!=2023 | attivi_df$career_time_conv<0)),]
+
+attivi_piu_1_df = attivi_df
+attivi_piu_1_df$career_time_conv = attivi_piu_1_df$career_time_conv + 365
+
+attivi_piu_2_df = attivi_piu_1_df
+attivi_piu_2_df$career_time_conv = attivi_piu_1_df$career_time_conv + 365
+
+attivi_piu_3_df = attivi_piu_2_df
+attivi_piu_3_df$career_time_conv = attivi_piu_2_df$career_time_conv + 365
+```
+
+Il modello ottimale è il seguente: 
+```{r}
+model_opt = glm("dropout ~ 1+exa_cfu_pass+exa_grade_average+highschool_grade+career_time_conv", data = train, family=binomial)
+summary(model_opt)
+
+```
+Costruiamo la predizione per gli attivi:
+```{r}
+predizione <- predict(model_opt, newdata = attivi_df, type = "response")
+predizione_piu_1 <- predict(model_opt, newdata = attivi_piu_1_df, type = "response")
+predizione_piu_2 <- predict(model_opt, newdata = attivi_piu_2_df, type = "response")
+predizione_piu_3 <- predict(model_opt, newdata = attivi_piu_3_df, type = "response")
+
+new_predizione = (predizione + predizione_piu_1 + predizione_piu_2 + predizione_piu_3)/4
+
+binary_output <- ifelse(new_predizione > 0.5, 1, 0)
+
+attivi_df$dropout_prediction = binary_output
+
+sum(binary_output)/length(binary_output)
+
+View(attivi_df)
+
+```
+
+```{r}
+dropout_df = cat_df[which(!((cat_df$career_time_conv > 1000 & cat_df$exa_cfu_pass==0)| cat_df$career_time_conv<0 | cat_df$dropout!=1)),]
+
+dr1 = nrow(dropout_df[which(dropout_df$career_time_conv<=182), ])/nrow(dropout_df)
+dr2 = nrow(dropout_df[which(dropout_df$career_time_conv>182 & dropout_df$career_time_conv<=365), ])/nrow(dropout_df)
+dr3 = nrow(dropout_df[which(dropout_df$career_time_conv>365 & dropout_df$career_time_conv<=547), ])/nrow(dropout_df)
+dr4 = nrow(dropout_df[which(dropout_df$career_time_conv>547 & dropout_df$career_time_conv<=730), ])/nrow(dropout_df)
+dr5 = nrow(dropout_df[which(dropout_df$career_time_conv>730 & dropout_df$career_time_conv<=912), ])/nrow(dropout_df)
+dr6 = nrow(dropout_df[which(dropout_df$career_time_conv>912 & dropout_df$career_time_conv<=1095), ])/nrow(dropout_df)
+
+pred_1 = predict(model_opt, newdata = attivi_df, type = "response")
+
+attivi_2 = attivi_df
+attivi_2$career_time_conv = attivi_2$career_time_conv + 182
+pred_2 = predict(model_opt, newdata = attivi_2, type = "response")
+
+attivi_3 = attivi_2
+attivi_3$career_time_conv = attivi_3$career_time_conv + 182
+pred_3 = predict(model_opt, newdata = attivi_3, type = "response")
+
+attivi_4 = attivi_3
+attivi_4$career_time_conv = attivi_4$career_time_conv + 182
+pred_4 = predict(model_opt, newdata = attivi_4, type = "response")
+
+attivi_5 = attivi_4
+attivi_5$career_time_conv = attivi_5$career_time_conv + 182
+pred_5 = predict(model_opt, newdata = attivi_5, type = "response")
+
+attivi_6 = attivi_5
+attivi_6$career_time_conv = attivi_6$career_time_conv + 182
+pred_6 = predict(model_opt, newdata = attivi_6, type = "response")
+
+final_pred = pred_1*dr1 + pred_2*dr2 + pred_3*dr3 + pred_4*dr4 + pred_5*dr5 + pred_6*dr6
+
+
+#binary_output <- ifelse(final_pred > 0.5, 1, 0)
+
+attivi_df$dropout_prediction = final_pred
+
+sum(binary_output)/length(binary_output)
+
+#View(attivi_df)
 ```
