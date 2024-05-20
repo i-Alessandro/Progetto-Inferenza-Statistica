@@ -1,6 +1,6 @@
 ---
 title: "Regressione_new"
-author: "Alessandro Wiget"
+author: "Alessandro Wiget, Sofia Sannino, Pietro Masini"
 date: "`r Sys.Date()`"
 output: github_document
 ---
