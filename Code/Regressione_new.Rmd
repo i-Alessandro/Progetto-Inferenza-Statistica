@@ -23,8 +23,9 @@ library(rgl)
 library(corrplot)
 library(pscl)
 library(plm)
-library(glmulti)
+#library(glmulti)
 library(AICcmodavg)
+library(glmtoolbox)
 ```
 
 ## Il Dataset
@@ -36,7 +37,7 @@ IMPORTANTE! Cambiare la directoy a seconda del pc.
 Importiamo il Dataset, presente nella cartella `Dati/`:
 
 ```{r}
-setwd("/home/alessandro/Inferenza Statistica/Progetto/Code")
+setwd("C:/Users/alewi/Documents/University/HKUST & PoliMi/II Semestre/Inferenza Statistica/Progetto/Code")
 df <- read_excel("../Dati/Dropout20240226_IngMate.xlsx")
 #View(df)
 ```
@@ -59,6 +60,7 @@ df$stud_career_degree_code_CdS <-NULL
 df$highschool_type <- NULL
 df$highschool_type_code <- NULL #abbiamo cancellato queste variabili operche possiamo separare fra classico, scientifico e altro con un'altra variabile
 df$stud_admis_convent_start_dt <- NULL
+df$stud_career_end_ay <-NULL
 
 filtered_df <- df %>% filter(stud_career_status != 'A')
 ```
@@ -83,6 +85,8 @@ corrplot(cor(X), method='color')
 Effettuiamo la regressione logistica fra le variabili numeriche del dataset, e vediamo quanto vale inizialmente l'adjustedR2:
 
 ```{r}
+
+
 # Create a formula for linear model
 formula_num <- as.formula(paste("dropout ~", paste(names(numerical_df[,-which(names(numerical_df) == "dropout")]), collapse = " + ")))
 
@@ -96,187 +100,218 @@ pseudo_r2 <- pR2(model_init)
 
 pseudo_r2['McFadden']
 ```
+
 Iniziamo da un valore di adjustedR2 di 0.656, quindi già buono, vediamo adesso di trovare un buon modello logistico, che dunque minimizzi l'AIC.
 
-Utilizziamo un Automatic Selection Method. Minimizziamo l'AIC con la funzione `glmulti()`, presente nell'omonima libreria.
-
-```{r, message=FALSE}
-glmulti.logistic.out <-
-    glmulti(formula_num, data = numerical_df,
-            level = 1,               # No interaction considered
-            method = "h",            # Exhaustive approach
-            crit = "aic",            # AIC as criteria
-            confsetsize = 25,         # Keep 5 best models
-            plotty = T, report = T,  # plot or interim reports
-            fitfunction = "glm",     # glm function
-            family = binomial)       # binomial family for logistic regression
-
-## Show 5 best models (Use @ instead of $ for an S4 object)
-glmulti.logistic.out@formulas
-```
 Restringiamoci al miglior modello per ogni numero di variabli (l'intercetta conta come variabile extra), e mostriamo anche i rispettivi adjustedR2:
 
-```{r}
-model_opt_7 = glm("dropout ~ 1 + career_start_ay + stud_career_admission_age + exa_cfu_pass + 
-    exa_grade_average + stud_career_end_ay + highschool_grade + 
-    career_time_conv", data=numerical_df, family=binomial)
+Non notiamo un peggioramento troppo elevato né dell'AIC né dell'adjR2 utilizzando il modello a 5 covariate, quindi prendiamo in considerazione quest'ultimo.
 
-model_opt_6 = glm("dropout ~ 1 + career_start_ay + exa_cfu_pass + exa_grade_average + 
-    stud_career_end_ay + highschool_grade + career_time_conv", data=numerical_df, family=binomial)
-
-model_opt_5 = glm("dropout ~ 1 + career_start_ay + exa_cfu_pass + stud_career_end_ay + 
-    highschool_grade + career_time_conv", data=numerical_df, family=binomial)
-
-models  = list(model_init, model_opt_7, model_opt_6, model_opt_5)
-model.names = c('Modello iniziale', 'Modello Ottimo con 7 Var', 'Modello Ottimo con 6 Var', 'Modello Ottimo con 5 Var')
-aictab(cand.set = models, modnames = model.names)
-
-print("Pseudo-R2 values:")
-sprintf("model_init: %f", pR2(model_init)['McFadden'])
-sprintf("model_opt_7: %f", pR2(model_opt_7)['McFadden'])
-sprintf("model_opt_6: %f", pR2(model_opt_6)['McFadden'])
-sprintf("model_opt_5: %f", pR2(model_opt_5)['McFadden'])
-```
-Non notiamo un  peggioramento troppo elevato né dell'AIC né dell'adjR2 utilizzando il modello a 5 covariate,  quindi prendiamo in considerazione quest'ultimo. 
-
-Effettuiamo una ricerca backward dal modello finale per cercare di trovare un modello simile ma con un processo più logico. 
+Effettuiamo una ricerca backward dal modello finale per cercare di trovare un modello simile ma con un processo più logico.
 
 ```{r}
 covariate = paste("dropout ~", paste(names(numerical_df[,-which(names(numerical_df) == "dropout")]), collapse = " + "))
 
 #Covariate rimosse durante la semplificazione, in ordine
-rimosso =  paste("- stud_admission_score - exa_avg_attempts - stud_career_admission_age - exa_grade_average")
 
-formula_num <- as.formula(paste(covariate, rimosso))
+formula_num <- as.formula(covariate)
 
 # Fit the linear model
 model_back <- glm(formula_num, data = numerical_df, family=binomial)
 
 # Print the summary of the model
-summary(model_back)
+drop1(model_back, test="Chisq")
 
-pseudo_r2 <- pR2(model_back)
+#-----------------------------
+covariate = paste(covariate, "- stud_admission_score")
 
-pseudo_r2['McFadden']
+formula_num <- as.formula(covariate)
 
-model_opt = model_back
+# Fit the linear model
+model_back <- glm(formula_num, data = numerical_df, family=binomial)
+
+# Print the summary of the model
+drop1(model_back, test="Chisq")
+#-------------------------------
+covariate = paste(covariate, "- exa_avg_attempts")
+
+formula_num <- as.formula(covariate)
+
+# Fit the linear model
+model_back <- glm(formula_num, data = numerical_df, family=binomial)
+
+# Print the summary of the model
+drop1(model_back, test="Chisq")
+#-----------------------------------------
+covariate = paste(covariate, "- career_start_ay")
+
+formula_1 <- as.formula(covariate)
+
+# Fit the linear model
+model_1 <- glm(formula_1, data = numerical_df, family=binomial)
+
+# Print the summary of the model
+drop1(model_back, test="Chisq")
+#------------------------------------------
+covariate = paste(covariate, "- stud_career_admission_age")
+
+formula_2 <- as.formula(covariate)
+
+# Fit the linear model
+model_2 <- glm(formula_2, data = numerical_df, family=binomial)
+
+# Print the summary of the model
+drop1(model_back, test="Chisq")
+
+anova(model_1, model_2, test="Chisq")
 ```
+Aggiungere che teniamo il modello con 5 covariate, rifiutando il modello con 4 per via del tenst sulle devianze.
 
+## Analisi dei Punti Influenti
 
-In relazione alla matrice delle covariate descritta prima `career_start_ay` e `stud_career_end_ay` sono estremamente correlate, vediamo se otteniamo un miglioramento o un peggioramento cancellandone una alla volta:
+Valutiamo l'impatto sul modello di eventuali punti leva e outliers. Partiamo dai punti leva:
 
 ```{r}
-model_no_start = glm("dropout ~ 1 + stud_career_admission_age + exa_cfu_pass + 
-    exa_grade_average + stud_career_end_ay + highschool_grade + 
-    career_time_conv", data=numerical_df, family=binomial)
+Z=model.matrix(model_1) #matrice disegno, i leverages su diag princ
+# __Rule of thumb:__ Given a point h_ii diagonal element of H, the i-th observation is a leverage if:
+#  h_ii > 2*(p)/n
+lev=hat(Z) #h_ii
+p = model_1$rank #nro covariate+1  
+n = dim(Z)[1] #nro osservazioni
 
-model_no_end = glm("dropout ~ 1 + career_start_ay + stud_career_admission_age + exa_cfu_pass + 
-    exa_grade_average  + highschool_grade + 
-    career_time_conv ", data=numerical_df, family=binomial)
+#plot dei leverages in funzione dell'osservazione
+plot(model_1$fitted.values, lev, ylab = "Leverages", main = "Plot of Leverages", 
+      pch = 16, col = 'black' )
+abline( h = 2 * p/n, lty = 2, col = 'red' ) #COSTRUISCO LEVA PER VEDERE SE QUALCUNO SUPERA
+watchout_points_lev = lev[ which( lev > 2 * p/n  ) ]
+watchout_ids_lev = seq_along( lev )[ which( lev > 2 * p/n ) ] ## identify the rows relative to leverage points
+points( model_1$fitted.values[ watchout_ids_lev ], watchout_points_lev, col = 'red', pch = 16 )
 
-models  = list(model_init, model_opt, model_no_start, model_no_end)
-model.names = c('Modello iniziale', 'Modello Ottimo', 'Modello Senza Anno di Inizio', 'Modello Senza Anno di Fine')
-aictab(cand.set = models, modnames = model.names)
+sum( lev [ lev >  2 * p / n ] ) # 1.36234/5= 0.272468 i leverages pesano quasi il 30 percento
+
 ```
+```{r}
+no_lev_df = numerical_df[which(!((numerical_df$career_time_conv > 1000 & numerical_df$exa_cfu_pass==0)| numerical_df$career_time_conv<0)),]
 
-Abbiamo un peggioramento sia se eliminiamo `career_start_ay` che se eliminiamo `stud_career_end_ay`, decidiamo, per ora, di mantenere invariato il modello.
+model_no_lev = glm("dropout ~ stud_career_admission_age + 
+    exa_cfu_pass + exa_grade_average + highschool_grade + 
+    career_time_conv  ", data=no_lev_df, family=binomial)
+summary(model_no_lev)
+```
+```{r}
+drop1(model_no_lev, test="Chisq")
+
+model_no_lev_opt = update(model_no_lev, . ~ . - stud_career_admission_age)
+
+anova(model_no_lev, model_no_lev_opt, test="Chisq")
+
+summary(model_no_lev_opt)
+```
 
 ## Introduzione Interazioni fra Variabili Numeriche
 
-Prima di procedere con l'aggiunta di variabili categoriche cerchiamo di comprendere se le aggiunte di interazioni fra variabili numeriche ci permettono di migliorare il nostro modello. 
-Osservando la matrice delle covariate costruita all'inizio possiamo osservare che `career_start_ay` e `stud_career_end_ay` sono estremamente correlate, aggiungiamo quindi al modello: `career_start_ay*stud_career_end_ay`. 
-Seguendo lo stesso ragionamento un'altra coppia di covariate che appaiono essere molto correlate sono `exa_cfu_pass` e `exa_grade_average`, introduciamo la loro interazione `exa_cfu_pass*exa_grade_average`:
+Prima di procedere con l'aggiunta di variabili categoriche cerchiamo di comprendere se le aggiunte di interazioni fra variabili numeriche ci permettono di migliorare il nostro modello. Osservando la matrice delle covariate costruita all'inizio possiamo osservare che `career_start_ay` e `stud_career_end_ay` sono estremamente correlate, aggiungiamo quindi al modello: `career_start_ay*stud_career_end_ay`. Seguendo lo stesso ragionamento un'altra coppia di covariate che appaiono essere molto correlate sono `exa_cfu_pass` e `exa_grade_average`, introduciamo la loro interazione `exa_cfu_pass*exa_grade_average`:
 
 ```{r}
-model_int_years = glm("dropout ~ 1 + stud_career_admission_age + exa_cfu_pass + 
-    exa_grade_average + highschool_grade + 
-    career_time_conv + career_start_ay*stud_career_end_ay", data=numerical_df, family=binomial)
+model_int_grade = glm("dropout ~ 1 + stud_career_admission_age + 
+    exa_cfu_pass + exa_grade_average + highschool_grade + 
+    career_time_conv + exa_cfu_pass*exa_grade_average", data=no_lev_df, family=binomial)
 
-model_int_grades = glm("dropout ~ 1 + stud_career_admission_age + highschool_grade + 
-    career_time_conv + career_start_ay*stud_career_end_ay + 
-    exa_cfu_pass*exa_grade_average", data=numerical_df, family=binomial)
+gvif(model_1)
+gvif(model_int_grade)
 
-models  = list(model_init, model_opt, model_int_years, model_int_grades)
-model.names = c('Modello iniziale', 'Modello Ottimo',  'Modello con Interazione fra Anni', 'Modello con Interazione fra CFU e Medie')
-aictab(cand.set = models, modnames = model.names)
+anova(model_no_lev_opt, model_int_grade, test="Chisq")
+
+
 ```
-Otteniamo un buon miglioramento dell'AIC a fronte di una maggiore complessità del modello (Decidere se mantenere o no il nuovo modello).
-```{r}
-#Aggiorniamo il migliore modello che  abbiamo trovato finora
-model_opt_int = model_int_grades
-```
+Non accetto il nuovo modello con l'interazione poichè il GVIF è troppo elevato.
 
 ## Introduzione delle Variabili Categoriche
 
 Rendiamo tutte le variabili del Dataset di tipo `factor` affinchè siano utilizzabili nella regressione logistica.
 
 ```{r}
+MODEL = model_no_lev_opt
+
 filtered_df <- df %>% filter(stud_career_status != 'A')
 filtered_df_no_na = na.omit(filtered_df)
 
 #Partendo dal modello di ottimo trovato prima costruisco la matrice solo con quelle covariate:
-new_df <- numerical_df
-new_df$stud_admission_score <- NULL
-new_df$exa_avg_attempts <- NULL
+cat_df <- filtered_df_no_na
 
-new_df$stud_gender = factor(filtered_df_no_na$stud_gender, ordered = F)
-new_df$previousStudies = factor(filtered_df_no_na$previousStudies, ordered = F)
-new_df$origins = factor(filtered_df_no_na$origins, ordered = F)
-new_df$income_bracket_normalized_on4 = factor(filtered_df_no_na$income_bracket_normalized_on4, ordered = F)
-new_df$dropped_on_180 = factor(filtered_df_no_na$dropped_on_180, ordered = F)
+cat_no_lev_df = cat_df[which(!((cat_df$career_time_conv > 1000 & cat_df$exa_cfu_pass==0)| cat_df$career_time_conv<0)),]
 
-#Costruiamo un modello con tutte le variabili categoriche:
-covariate = paste("dropout ~", paste(names(new_df[,-which(names(new_df) == "dropout")]), collapse = " + "))
-interazioni = "+ exa_cfu_pass*exa_grade_average"
-formula_cat <- as.formula(paste(covariate, interazioni))
+cat_no_lev_df$stud_gender = factor(cat_no_lev_df$stud_gender, ordered=F)
+cat_no_lev_df$previousStudies = factor(cat_no_lev_df$previousStudies, ordered=F)
+cat_no_lev_df$origins = factor(cat_no_lev_df$origins, ordered=F)
+cat_no_lev_df$income_bracket_normalized_on4 = factor(cat_no_lev_df$income_bracket_normalized_on4, ordered=F)
 
-model_cat <- glm(formula_cat, data = new_df, family=binomial)
 
-summary(model_cat)
+cat_no_lev_df$dropped_on_180<-NULL
+cat_no_lev_df$stud_career_status <-NULL
 
-models  = list(model_init, model_opt, model_cat, model_opt_int)
-model.names = c('Modello iniziale', 'Modello Ottimo', 'Modello con Ottimo con Interazione + Categorie', 'Modello Ottimo con Interazione')
-aictab(cand.set = models, modnames = model.names)
+
+View(cat_no_lev_df)
 ```
-
-
-
-**Qui bisogna introdurre i risultati delle analisi fatte con ANOVA, per capire quali categorie sono effettivamente importanti e che hanno bisogno di essere considerate. Poi procediamo con una ricerca del modello che minimizza l'AIC includendo le variabili categoriche.**
-
-**Lo step di minimizzazione lo possiamo cancellare una volta che abbiamo ridotto la numerosità di variabili categoriche con l'ANOVA**
-
-Proviamo a migliorarlo con `glmulti()`:
-
-```{r, message=FALSE}
-glmulti.logistic.out <-
-    glmulti(formula_cat, data = new_df,
-            level = 1,               # No interaction considered
-            method = "h",            # Exhaustive approach
-            crit = "aic",            # AIC as criteria
-            confsetsize = 5,         # Keep 5 best models
-            plotty = F, report = F,  # No plot or interim reports
-            fitfunction = "glm",     # glm function
-            family = binomial)       # binomial family for logistic regression
-
-## Show 5 best models (Use @ instead of $ for an S4 object)
-glmulti.logistic.out@formulas
-```
-Notiamo che il modello suggerito contiene la variabile categorica `stud_gender`. 
-Osserviamo il modello ottimale trovato e compariamolo al modello iniziale,  al modello ottimale trovato finora e a quest'ultimo con l'aggiunta di `stud_gender`:
 
 ```{r}
-model_opt_cat = glm("dropout ~ 1 + stud_gender + career_start_ay + stud_career_admission_age + 
-    exa_cfu_pass + exa_grade_average + stud_career_end_ay + highschool_grade + 
-    career_time_conv", data=new_df, family=binomial)
+male = cat_no_lev_df[which(cat_no_lev_df$stud_gender=="M"),]
+male_mean = mean(male$dropout)
+male_mean
 
-model_opt_stud_gender = glm("dropout ~ 1 + stud_career_admission_age + highschool_grade + 
-    career_time_conv + career_start_ay*stud_career_end_ay + 
-    exa_cfu_pass*exa_grade_average + stud_gender ", data=new_df, family=binomial)
+female = cat_no_lev_df[which(cat_no_lev_df$stud_gender=="F"),]
+female_mean = mean(female$dropout)
+female_mean
 
-models  = list(model_init, model_opt, model_opt_cat, model_opt_stud_gender)
-model.names = c('Modello iniziale', 'Modello Ottimizzato', 'Modello con Categorie Ottimizzato', 'Modello Ottimo + Categoria stud_gender')
-aictab(cand.set = models, modnames = model.names)
+# Facciamo uno z-test con:
+#                       H0: pM == pF
+#                       H1: pM != pF
+
+p_hat = (sum(female$dropout) + sum(male$dropout))/(nrow(cat_no_lev_df))
+
+z_test = (male_mean - female_mean)/sqrt(p_hat*(1-p_hat)*(1/nrow(male) + 1/nrow(female)))
+
+p_value = 2*pnorm(z_test)
 ```
-Rigettiamo quindi il modello 
+Non posso rifiutare H0. Non noto una differenza di probabilità di dropout fra maschi e femmine. Non aggiungiamo questa categoria nel modello finale.
 
-## Introduzione delle Interazioni
+```{r}
+model_anova = aov(cat_no_lev_df$dropout ~ cat_no_lev_df$previousStudies, data=cat_no_lev_df)
+
+summary(model_anova)
+```
+
+```{r}
+model_anova = aov(cat_no_lev_df$dropout ~ cat_no_lev_df$origins, data=cat_no_lev_df)
+
+summary(model_anova)
+```
+
+```{r}
+model_anova = aov(cat_no_lev_df$dropout ~ cat_no_lev_df$income_bracket_normalized_on4, data=cat_no_lev_df)
+
+summary(model_anova)
+```
+Aggiungere dei boxplot
+
+```{r}
+model_cat = glm("dropout ~ 1 + 
+    exa_cfu_pass + exa_grade_average + highschool_grade + 
+    career_time_conv + previousStudies + origins + income_bracket_normalized_on4", data=cat_no_lev_df, family=binomial)
+
+
+drop1(model_cat, test="Chisq")
+
+model_cat = update(model_cat,  . ~ . - origins)
+drop1(model_cat, test="Chisq")
+
+model_cat = update(model_cat,  . ~ . - income_bracket_normalized_on4)
+drop1(model_cat, test="Chisq")
+
+model_cat = update(model_cat,  . ~ . - previousStudies)
+drop1(model_cat, test="Chisq")
+```
+
+Abbiamo trovato che il modello non ha bisogno di covariate categoriche. 
+
+## Confusion Matrix
