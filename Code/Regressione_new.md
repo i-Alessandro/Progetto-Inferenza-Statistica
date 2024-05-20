@@ -1,7 +1,7 @@
 Regressione_new
 ================
 Alessandro Wiget
-2024-05-19
+2024-05-20
 
 ## Librerie
 
@@ -17,8 +17,9 @@ library(rgl)
 library(corrplot)
 library(pscl)
 library(plm)
-library(glmulti)
+#library(glmulti)
 library(AICcmodavg)
+library(glmtoolbox)
 ```
 
 ## Il Dataset
@@ -30,7 +31,7 @@ IMPORTANTE! Cambiare la directoy a seconda del pc.
 Importiamo il Dataset, presente nella cartella `Dati/`:
 
 ``` r
-setwd("/home/alessandro/Inferenza Statistica/Progetto/Code")
+setwd("C:/Users/alewi/Documents/University/HKUST & PoliMi/II Semestre/Inferenza Statistica/Progetto/Code")
 df <- read_excel("../Dati/Dropout20240226_IngMate.xlsx")
 #View(df)
 ```
@@ -54,6 +55,7 @@ df$stud_career_degree_code_CdS <-NULL
 df$highschool_type <- NULL
 df$highschool_type_code <- NULL #abbiamo cancellato queste variabili operche possiamo separare fra classico, scientifico e altro con un'altra variabile
 df$stud_admis_convent_start_dt <- NULL
+df$stud_career_end_ay <-NULL
 
 filtered_df <- df %>% filter(stud_career_status != 'A')
 ```
@@ -97,30 +99,29 @@ summary(model_init)
     ## 
     ## Deviance Residuals: 
     ##     Min       1Q   Median       3Q      Max  
-    ## -1.7120  -0.2907  -0.1961  -0.0782   4.5886  
+    ## -1.8683  -0.2974  -0.2021  -0.0920   4.7038  
     ## 
     ## Coefficients:
     ##                             Estimate Std. Error z value Pr(>|z|)    
-    ## (Intercept)               120.995553  65.261589   1.854  0.06374 .  
-    ## career_start_ay            -1.713397   0.357433  -4.794 1.64e-06 ***
-    ## stud_admission_score        0.011294   0.010093   1.119  0.26314    
-    ## stud_career_admission_age   0.400966   0.142329   2.817  0.00484 ** 
-    ## exa_cfu_pass               -0.128186   0.015112  -8.482  < 2e-16 ***
-    ## exa_grade_average          -0.058420   0.017805  -3.281  0.00103 ** 
-    ## exa_avg_attempts            0.333251   0.240698   1.385  0.16620    
-    ## stud_career_end_ay          1.654889   0.355049   4.661 3.15e-06 ***
-    ## highschool_grade           -0.040491   0.009209  -4.397 1.10e-05 ***
-    ## career_time_conv           -0.009152   0.001061  -8.629  < 2e-16 ***
+    ## (Intercept)                1.098e+02  6.432e+01   1.706  0.08793 .  
+    ## career_start_ay           -5.354e-02  3.164e-02  -1.692  0.09063 .  
+    ## stud_admission_score       1.200e-02  9.971e-03   1.204  0.22866    
+    ## stud_career_admission_age  3.882e-01  1.426e-01   2.723  0.00647 ** 
+    ## exa_cfu_pass              -1.362e-01  1.506e-02  -9.045  < 2e-16 ***
+    ## exa_grade_average         -5.672e-02  1.769e-02  -3.206  0.00135 ** 
+    ## exa_avg_attempts           3.800e-01  2.377e-01   1.598  0.10997    
+    ## highschool_grade          -4.188e-02  9.064e-03  -4.621 3.82e-06 ***
+    ## career_time_conv          -4.514e-03  2.664e-04 -16.944  < 2e-16 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
     ## (Dispersion parameter for binomial family taken to be 1)
     ## 
     ##     Null deviance: 2585.74  on 2462  degrees of freedom
-    ## Residual deviance:  888.21  on 2453  degrees of freedom
-    ## AIC: 908.21
+    ## Residual deviance:  910.71  on 2454  degrees of freedom
+    ## AIC: 928.71
     ## 
-    ## Number of Fisher Scoring iterations: 7
+    ## Number of Fisher Scoring iterations: 6
 
 ``` r
 pseudo_r2 <- pR2(model_init)
@@ -133,320 +134,14 @@ pseudo_r2['McFadden']
 ```
 
     ##  McFadden 
-    ## 0.6564982
+    ## 0.6477962
 
 Iniziamo da un valore di adjustedR2 di 0.656, quindi già buono, vediamo
 adesso di trovare un buon modello logistico, che dunque minimizzi l’AIC.
 
-Utilizziamo un Automatic Selection Method. Minimizziamo l’AIC con la
-funzione `glmulti()`, presente nell’omonima libreria.
-
-``` r
-glmulti.logistic.out <-
-    glmulti(formula_num, data = numerical_df,
-            level = 1,               # No interaction considered
-            method = "h",            # Exhaustive approach
-            crit = "aic",            # AIC as criteria
-            confsetsize = 25,         # Keep 5 best models
-            plotty = T, report = T,  # plot or interim reports
-            fitfunction = "glm",     # glm function
-            family = binomial)       # binomial family for logistic regression
-```
-
-    ## Initialization...
-    ## TASK: Exhaustive screening of candidate set.
-    ## Fitting...
-    ## 
-    ## After 50 models:
-    ## Best model: dropout~1+career_start_ay+stud_career_admission_age+exa_cfu_pass+exa_grade_average
-    ## Crit= 1529.27547800634
-    ## Mean crit= 1557.59476541779
-
-![](Regressione_new_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
-
-    ## 
-    ## After 100 models:
-    ## Best model: dropout~1+career_start_ay+stud_career_admission_age+exa_cfu_pass+exa_grade_average+stud_career_end_ay
-    ## Crit= 1012.38054469747
-    ## Mean crit= 1297.69062388251
-
-![](Regressione_new_files/figure-gfm/unnamed-chunk-7-2.png)<!-- -->
-
-    ## 
-    ## After 150 models:
-    ## Best model: dropout~1+career_start_ay+stud_career_admission_age+exa_cfu_pass+exa_grade_average+exa_avg_attempts+stud_career_end_ay
-    ## Crit= 1010.29831393719
-    ## Mean crit= 1067.84729431362
-
-    ## 
-    ## After 200 models:
-    ## Best model: dropout~1+career_start_ay+stud_career_admission_age+exa_cfu_pass+exa_grade_average+exa_avg_attempts+stud_career_end_ay
-    ## Crit= 1010.29831393719
-    ## Mean crit= 1067.84729431362
-
-![](Regressione_new_files/figure-gfm/unnamed-chunk-7-3.png)<!-- -->
-
-    ## 
-    ## After 250 models:
-    ## Best model: dropout~1+career_start_ay+stud_career_admission_age+exa_cfu_pass+exa_grade_average+stud_career_end_ay+highschool_grade
-    ## Crit= 993.711345471493
-    ## Mean crit= 1010.52074154865
-
-![](Regressione_new_files/figure-gfm/unnamed-chunk-7-4.png)<!-- -->
-
-    ## 
-    ## After 300 models:
-    ## Best model: dropout~1+career_start_ay+stud_career_admission_age+exa_cfu_pass+exa_grade_average+career_time_conv
-    ## Crit= 948.472043967588
-    ## Mean crit= 973.049031965309
-
-![](Regressione_new_files/figure-gfm/unnamed-chunk-7-5.png)<!-- -->
-
-    ## 
-    ## After 350 models:
-    ## Best model: dropout~1+career_start_ay+stud_career_admission_age+exa_cfu_pass+stud_career_end_ay+career_time_conv
-    ## Crit= 936.96149050757
-    ## Mean crit= 953.214348629333
-
-![](Regressione_new_files/figure-gfm/unnamed-chunk-7-6.png)<!-- -->
-
-    ## 
-    ## After 400 models:
-    ## Best model: dropout~1+career_start_ay+stud_career_admission_age+exa_cfu_pass+exa_grade_average+exa_avg_attempts+stud_career_end_ay+career_time_conv
-    ## Crit= 924.376745947487
-    ## Mean crit= 940.831265371242
-
-![](Regressione_new_files/figure-gfm/unnamed-chunk-7-7.png)<!-- -->
-
-    ## 
-    ## After 450 models:
-    ## Best model: dropout~1+career_start_ay+stud_career_admission_age+exa_cfu_pass+exa_grade_average+exa_avg_attempts+stud_career_end_ay+career_time_conv
-    ## Crit= 924.376745947487
-    ## Mean crit= 932.95706860444
-
-![](Regressione_new_files/figure-gfm/unnamed-chunk-7-8.png)<!-- -->
-
-    ## 
-    ## After 500 models:
-    ## Best model: dropout~1+career_start_ay+stud_career_admission_age+exa_cfu_pass+exa_grade_average+stud_career_end_ay+highschool_grade+career_time_conv
-    ## Crit= 906.988523782786
-    ## Mean crit= 924.52176257677
-
-![](Regressione_new_files/figure-gfm/unnamed-chunk-7-9.png)<!-- -->
-
-    ## Completed.
-
-``` r
-## Show 5 best models (Use @ instead of $ for an S4 object)
-glmulti.logistic.out@formulas
-```
-
-    ## [[1]]
-    ## dropout ~ 1 + career_start_ay + stud_career_admission_age + exa_cfu_pass + 
-    ##     exa_grade_average + stud_career_end_ay + highschool_grade + 
-    ##     career_time_conv
-    ## <environment: 0x5c7f84caaed0>
-    ## 
-    ## [[2]]
-    ## dropout ~ 1 + career_start_ay + stud_career_admission_age + exa_cfu_pass + 
-    ##     exa_grade_average + exa_avg_attempts + stud_career_end_ay + 
-    ##     highschool_grade + career_time_conv
-    ## <environment: 0x5c7f84caaed0>
-    ## 
-    ## [[3]]
-    ## dropout ~ 1 + career_start_ay + stud_admission_score + stud_career_admission_age + 
-    ##     exa_cfu_pass + exa_grade_average + stud_career_end_ay + highschool_grade + 
-    ##     career_time_conv
-    ## <environment: 0x5c7f84caaed0>
-    ## 
-    ## [[4]]
-    ## dropout ~ 1 + career_start_ay + stud_admission_score + stud_career_admission_age + 
-    ##     exa_cfu_pass + exa_grade_average + exa_avg_attempts + stud_career_end_ay + 
-    ##     highschool_grade + career_time_conv
-    ## <environment: 0x5c7f84caaed0>
-    ## 
-    ## [[5]]
-    ## dropout ~ 1 + career_start_ay + exa_cfu_pass + exa_grade_average + 
-    ##     stud_career_end_ay + highschool_grade + career_time_conv
-    ## <environment: 0x5c7f84caaed0>
-    ## 
-    ## [[6]]
-    ## dropout ~ 1 + career_start_ay + exa_cfu_pass + exa_grade_average + 
-    ##     exa_avg_attempts + stud_career_end_ay + highschool_grade + 
-    ##     career_time_conv
-    ## <environment: 0x5c7f84caaed0>
-    ## 
-    ## [[7]]
-    ## dropout ~ 1 + career_start_ay + stud_admission_score + exa_cfu_pass + 
-    ##     exa_grade_average + stud_career_end_ay + highschool_grade + 
-    ##     career_time_conv
-    ## <environment: 0x5c7f84caaed0>
-    ## 
-    ## [[8]]
-    ## dropout ~ 1 + career_start_ay + stud_career_admission_age + exa_cfu_pass + 
-    ##     stud_career_end_ay + highschool_grade + career_time_conv
-    ## <environment: 0x5c7f84caaed0>
-    ## 
-    ## [[9]]
-    ## dropout ~ 1 + career_start_ay + stud_admission_score + exa_cfu_pass + 
-    ##     exa_grade_average + exa_avg_attempts + stud_career_end_ay + 
-    ##     highschool_grade + career_time_conv
-    ## <environment: 0x5c7f84caaed0>
-    ## 
-    ## [[10]]
-    ## dropout ~ 1 + career_start_ay + stud_career_admission_age + exa_cfu_pass + 
-    ##     exa_avg_attempts + stud_career_end_ay + highschool_grade + 
-    ##     career_time_conv
-    ## <environment: 0x5c7f84caaed0>
-    ## 
-    ## [[11]]
-    ## dropout ~ 1 + career_start_ay + stud_admission_score + stud_career_admission_age + 
-    ##     exa_cfu_pass + stud_career_end_ay + highschool_grade + career_time_conv
-    ## <environment: 0x5c7f84caaed0>
-    ## 
-    ## [[12]]
-    ## dropout ~ 1 + career_start_ay + stud_admission_score + stud_career_admission_age + 
-    ##     exa_cfu_pass + exa_avg_attempts + stud_career_end_ay + highschool_grade + 
-    ##     career_time_conv
-    ## <environment: 0x5c7f84caaed0>
-    ## 
-    ## [[13]]
-    ## dropout ~ 1 + career_start_ay + exa_cfu_pass + stud_career_end_ay + 
-    ##     highschool_grade + career_time_conv
-    ## <environment: 0x5c7f84caaed0>
-    ## 
-    ## [[14]]
-    ## dropout ~ 1 + career_start_ay + exa_cfu_pass + exa_avg_attempts + 
-    ##     stud_career_end_ay + highschool_grade + career_time_conv
-    ## <environment: 0x5c7f84caaed0>
-    ## 
-    ## [[15]]
-    ## dropout ~ 1 + career_start_ay + stud_admission_score + exa_cfu_pass + 
-    ##     stud_career_end_ay + highschool_grade + career_time_conv
-    ## <environment: 0x5c7f84caaed0>
-    ## 
-    ## [[16]]
-    ## dropout ~ 1 + career_start_ay + stud_admission_score + exa_cfu_pass + 
-    ##     exa_avg_attempts + stud_career_end_ay + highschool_grade + 
-    ##     career_time_conv
-    ## <environment: 0x5c7f84caaed0>
-    ## 
-    ## [[17]]
-    ## dropout ~ 1 + career_start_ay + stud_career_admission_age + exa_cfu_pass + 
-    ##     exa_grade_average + exa_avg_attempts + stud_career_end_ay + 
-    ##     career_time_conv
-    ## <environment: 0x5c7f84caaed0>
-    ## 
-    ## [[18]]
-    ## dropout ~ 1 + career_start_ay + stud_career_admission_age + exa_cfu_pass + 
-    ##     exa_grade_average + stud_career_end_ay + career_time_conv
-    ## <environment: 0x5c7f84caaed0>
-    ## 
-    ## [[19]]
-    ## dropout ~ 1 + career_start_ay + stud_admission_score + stud_career_admission_age + 
-    ##     exa_cfu_pass + exa_grade_average + exa_avg_attempts + stud_career_end_ay + 
-    ##     career_time_conv
-    ## <environment: 0x5c7f84caaed0>
-    ## 
-    ## [[20]]
-    ## dropout ~ 1 + career_start_ay + stud_admission_score + stud_career_admission_age + 
-    ##     exa_cfu_pass + exa_grade_average + stud_career_end_ay + career_time_conv
-    ## <environment: 0x5c7f84caaed0>
-    ## 
-    ## [[21]]
-    ## dropout ~ 1 + career_start_ay + stud_career_admission_age + exa_cfu_pass + 
-    ##     exa_grade_average + exa_avg_attempts + highschool_grade + 
-    ##     career_time_conv
-    ## <environment: 0x5c7f84caaed0>
-    ## 
-    ## [[22]]
-    ## dropout ~ 1 + career_start_ay + stud_career_admission_age + exa_cfu_pass + 
-    ##     exa_grade_average + highschool_grade + career_time_conv
-    ## <environment: 0x5c7f84caaed0>
-    ## 
-    ## [[23]]
-    ## dropout ~ 1 + career_start_ay + stud_admission_score + stud_career_admission_age + 
-    ##     exa_cfu_pass + exa_grade_average + exa_avg_attempts + highschool_grade + 
-    ##     career_time_conv
-    ## <environment: 0x5c7f84caaed0>
-    ## 
-    ## [[24]]
-    ## dropout ~ 1 + career_start_ay + stud_admission_score + stud_career_admission_age + 
-    ##     exa_cfu_pass + exa_grade_average + highschool_grade + career_time_conv
-    ## <environment: 0x5c7f84caaed0>
-    ## 
-    ## [[25]]
-    ## dropout ~ 1 + stud_admission_score + stud_career_admission_age + 
-    ##     exa_cfu_pass + exa_grade_average + exa_avg_attempts + highschool_grade + 
-    ##     career_time_conv
-    ## <environment: 0x5c7f84caaed0>
-
 Restringiamoci al miglior modello per ogni numero di variabli
 (l’intercetta conta come variabile extra), e mostriamo anche i
 rispettivi adjustedR2:
-
-``` r
-model_opt_7 = glm("dropout ~ 1 + career_start_ay + stud_career_admission_age + exa_cfu_pass + 
-    exa_grade_average + stud_career_end_ay + highschool_grade + 
-    career_time_conv", data=numerical_df, family=binomial)
-
-model_opt_6 = glm("dropout ~ 1 + career_start_ay + exa_cfu_pass + exa_grade_average + 
-    stud_career_end_ay + highschool_grade + career_time_conv", data=numerical_df, family=binomial)
-
-model_opt_5 = glm("dropout ~ 1 + career_start_ay + exa_cfu_pass + stud_career_end_ay + 
-    highschool_grade + career_time_conv", data=numerical_df, family=binomial)
-
-models  = list(model_init, model_opt_7, model_opt_6, model_opt_5)
-model.names = c('Modello iniziale', 'Modello Ottimo con 7 Var', 'Modello Ottimo con 6 Var', 'Modello Ottimo con 5 Var')
-aictab(cand.set = models, modnames = model.names)
-```
-
-    ## 
-    ## Model selection based on AICc:
-    ## 
-    ##                           K   AICc Delta_AICc AICcWt Cum.Wt      LL
-    ## Modello Ottimo con 7 Var  8 907.05       0.00   0.63   0.63 -445.49
-    ## Modello iniziale         10 908.30       1.25   0.34   0.97 -444.10
-    ## Modello Ottimo con 6 Var  7 913.26       6.21   0.03   1.00 -449.61
-    ## Modello Ottimo con 5 Var  6 921.26      14.22   0.00   1.00 -454.62
-
-``` r
-print("Pseudo-R2 values:")
-```
-
-    ## [1] "Pseudo-R2 values:"
-
-``` r
-sprintf("model_init: %f", pR2(model_init)['McFadden'])
-```
-
-    ## fitting null model for pseudo-r2
-
-    ## [1] "model_init: 0.656498"
-
-``` r
-sprintf("model_opt_7: %f", pR2(model_opt_7)['McFadden'])
-```
-
-    ## fitting null model for pseudo-r2
-
-    ## [1] "model_opt_7: 0.655423"
-
-``` r
-sprintf("model_opt_6: %f", pR2(model_opt_6)['McFadden'])
-```
-
-    ## fitting null model for pseudo-r2
-
-    ## [1] "model_opt_6: 0.652241"
-
-``` r
-sprintf("model_opt_5: %f", pR2(model_opt_5)['McFadden'])
-```
-
-    ## fitting null model for pseudo-r2
-
-    ## [1] "model_opt_5: 0.648368"
 
 Non notiamo un peggioramento troppo elevato né dell’AIC né dell’adjR2
 utilizzando il modello a 5 covariate, quindi prendiamo in considerazione
@@ -459,92 +154,313 @@ trovare un modello simile ma con un processo più logico.
 covariate = paste("dropout ~", paste(names(numerical_df[,-which(names(numerical_df) == "dropout")]), collapse = " + "))
 
 #Covariate rimosse durante la semplificazione, in ordine
-rimosso =  paste("- stud_admission_score - exa_avg_attempts - stud_career_admission_age - exa_grade_average")
 
-formula_num <- as.formula(paste(covariate, rimosso))
+formula_num <- as.formula(covariate)
 
 # Fit the linear model
 model_back <- glm(formula_num, data = numerical_df, family=binomial)
 
 # Print the summary of the model
-summary(model_back)
+drop1(model_back, test="Chisq")
+```
+
+    ## Single term deletions
+    ## 
+    ## Model:
+    ## dropout ~ career_start_ay + stud_admission_score + stud_career_admission_age + 
+    ##     exa_cfu_pass + exa_grade_average + exa_avg_attempts + highschool_grade + 
+    ##     career_time_conv
+    ##                           Df Deviance     AIC    LRT  Pr(>Chi)    
+    ## <none>                         910.71  928.71                     
+    ## career_start_ay            1   913.56  929.56   2.85  0.091236 .  
+    ## stud_admission_score       1   912.16  928.16   1.46  0.227631    
+    ## stud_career_admission_age  1   918.47  934.47   7.77  0.005322 ** 
+    ## exa_cfu_pass               1   999.25 1015.25  88.54 < 2.2e-16 ***
+    ## exa_grade_average          1   921.17  937.17  10.46  0.001218 ** 
+    ## exa_avg_attempts           1   913.18  929.18   2.47  0.115855    
+    ## highschool_grade           1   932.20  948.20  21.49 3.557e-06 ***
+    ## career_time_conv           1  1515.24 1531.24 604.53 < 2.2e-16 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+``` r
+#-----------------------------
+covariate = paste(covariate, "- stud_admission_score")
+
+formula_num <- as.formula(covariate)
+
+# Fit the linear model
+model_back <- glm(formula_num, data = numerical_df, family=binomial)
+
+# Print the summary of the model
+drop1(model_back, test="Chisq")
+```
+
+    ## Single term deletions
+    ## 
+    ## Model:
+    ## dropout ~ career_start_ay + stud_admission_score + stud_career_admission_age + 
+    ##     exa_cfu_pass + exa_grade_average + exa_avg_attempts + highschool_grade + 
+    ##     career_time_conv - stud_admission_score
+    ##                           Df Deviance     AIC    LRT  Pr(>Chi)    
+    ## <none>                         912.16  928.16                     
+    ## career_start_ay            1   916.80  930.80   4.63  0.031370 *  
+    ## stud_career_admission_age  1   920.08  934.08   7.92  0.004895 ** 
+    ## exa_cfu_pass               1   999.41 1013.41  87.25 < 2.2e-16 ***
+    ## exa_grade_average          1   921.81  935.81   9.65  0.001893 ** 
+    ## exa_avg_attempts           1   914.23  928.23   2.06  0.150897    
+    ## highschool_grade           1   932.97  946.97  20.81 5.073e-06 ***
+    ## career_time_conv           1  1516.77 1530.77 604.61 < 2.2e-16 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+``` r
+#-------------------------------
+covariate = paste(covariate, "- exa_avg_attempts")
+
+formula_num <- as.formula(covariate)
+
+# Fit the linear model
+model_back <- glm(formula_num, data = numerical_df, family=binomial)
+
+# Print the summary of the model
+drop1(model_back, test="Chisq")
+```
+
+    ## Single term deletions
+    ## 
+    ## Model:
+    ## dropout ~ career_start_ay + stud_admission_score + stud_career_admission_age + 
+    ##     exa_cfu_pass + exa_grade_average + exa_avg_attempts + highschool_grade + 
+    ##     career_time_conv - stud_admission_score - exa_avg_attempts
+    ##                           Df Deviance     AIC    LRT  Pr(>Chi)    
+    ## <none>                         914.23  928.23                     
+    ## career_start_ay            1   918.62  930.62   4.39  0.036179 *  
+    ## stud_career_admission_age  1   921.88  933.88   7.65  0.005666 ** 
+    ## exa_cfu_pass               1  1000.64 1012.64  86.41 < 2.2e-16 ***
+    ## exa_grade_average          1   922.17  934.17   7.94  0.004829 ** 
+    ## highschool_grade           1   936.47  948.47  22.24   2.4e-06 ***
+    ## career_time_conv           1  1519.16 1531.16 604.94 < 2.2e-16 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+``` r
+#-----------------------------------------
+covariate = paste(covariate, "- career_start_ay")
+
+formula_1 <- as.formula(covariate)
+
+# Fit the linear model
+model_1 <- glm(formula_1, data = numerical_df, family=binomial)
+
+# Print the summary of the model
+drop1(model_back, test="Chisq")
+```
+
+    ## Single term deletions
+    ## 
+    ## Model:
+    ## dropout ~ career_start_ay + stud_admission_score + stud_career_admission_age + 
+    ##     exa_cfu_pass + exa_grade_average + exa_avg_attempts + highschool_grade + 
+    ##     career_time_conv - stud_admission_score - exa_avg_attempts
+    ##                           Df Deviance     AIC    LRT  Pr(>Chi)    
+    ## <none>                         914.23  928.23                     
+    ## career_start_ay            1   918.62  930.62   4.39  0.036179 *  
+    ## stud_career_admission_age  1   921.88  933.88   7.65  0.005666 ** 
+    ## exa_cfu_pass               1  1000.64 1012.64  86.41 < 2.2e-16 ***
+    ## exa_grade_average          1   922.17  934.17   7.94  0.004829 ** 
+    ## highschool_grade           1   936.47  948.47  22.24   2.4e-06 ***
+    ## career_time_conv           1  1519.16 1531.16 604.94 < 2.2e-16 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+``` r
+#------------------------------------------
+covariate = paste(covariate, "- stud_career_admission_age")
+
+formula_2 <- as.formula(covariate)
+
+# Fit the linear model
+model_2 <- glm(formula_2, data = numerical_df, family=binomial)
+
+# Print the summary of the model
+drop1(model_back, test="Chisq")
+```
+
+    ## Single term deletions
+    ## 
+    ## Model:
+    ## dropout ~ career_start_ay + stud_admission_score + stud_career_admission_age + 
+    ##     exa_cfu_pass + exa_grade_average + exa_avg_attempts + highschool_grade + 
+    ##     career_time_conv - stud_admission_score - exa_avg_attempts
+    ##                           Df Deviance     AIC    LRT  Pr(>Chi)    
+    ## <none>                         914.23  928.23                     
+    ## career_start_ay            1   918.62  930.62   4.39  0.036179 *  
+    ## stud_career_admission_age  1   921.88  933.88   7.65  0.005666 ** 
+    ## exa_cfu_pass               1  1000.64 1012.64  86.41 < 2.2e-16 ***
+    ## exa_grade_average          1   922.17  934.17   7.94  0.004829 ** 
+    ## highschool_grade           1   936.47  948.47  22.24   2.4e-06 ***
+    ## career_time_conv           1  1519.16 1531.16 604.94 < 2.2e-16 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+``` r
+anova(model_1, model_2, test="Chisq")
+```
+
+    ## Analysis of Deviance Table
+    ## 
+    ## Model 1: dropout ~ career_start_ay + stud_admission_score + stud_career_admission_age + 
+    ##     exa_cfu_pass + exa_grade_average + exa_avg_attempts + highschool_grade + 
+    ##     career_time_conv - stud_admission_score - exa_avg_attempts - 
+    ##     career_start_ay
+    ## Model 2: dropout ~ career_start_ay + stud_admission_score + stud_career_admission_age + 
+    ##     exa_cfu_pass + exa_grade_average + exa_avg_attempts + highschool_grade + 
+    ##     career_time_conv - stud_admission_score - exa_avg_attempts - 
+    ##     career_start_ay - stud_career_admission_age
+    ##   Resid. Df Resid. Dev Df Deviance Pr(>Chi)   
+    ## 1      2457     918.62                        
+    ## 2      2458     927.77 -1  -9.1584 0.002476 **
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Aggiungere che teniamo il modello con 5 covariate, rifiutando il modello
+con 4 per via del tenst sulle devianze.
+
+## Analisi dei Punti Influenti
+
+Valutiamo l’impatto sul modello di eventuali punti leva e outliers.
+Partiamo dai punti leva:
+
+``` r
+Z=model.matrix(model_1) #matrice disegno, i leverages su diag princ
+# __Rule of thumb:__ Given a point h_ii diagonal element of H, the i-th observation is a leverage if:
+#  h_ii > 2*(p)/n
+lev=hat(Z) #h_ii
+p = model_1$rank #nro covariate+1  
+n = dim(Z)[1] #nro osservazioni
+
+#plot dei leverages in funzione dell'osservazione
+plot(model_1$fitted.values, lev, ylab = "Leverages", main = "Plot of Leverages", 
+      pch = 16, col = 'black' )
+abline( h = 2 * p/n, lty = 2, col = 'red' ) #COSTRUISCO LEVA PER VEDERE SE QUALCUNO SUPERA
+watchout_points_lev = lev[ which( lev > 2 * p/n  ) ]
+watchout_ids_lev = seq_along( lev )[ which( lev > 2 * p/n ) ] ## identify the rows relative to leverage points
+points( model_1$fitted.values[ watchout_ids_lev ], watchout_points_lev, col = 'red', pch = 16 )
+```
+
+![](Regressione_new_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+
+``` r
+sum( lev [ lev >  2 * p / n ] ) # 1.36234/5= 0.272468 i leverages pesano quasi il 30 percento
+```
+
+    ## [1] 1.399353
+
+``` r
+no_lev_df = numerical_df[which(!((numerical_df$career_time_conv > 1000 & numerical_df$exa_cfu_pass==0)| numerical_df$career_time_conv<0)),]
+
+model_no_lev = glm("dropout ~ stud_career_admission_age + 
+    exa_cfu_pass + exa_grade_average + highschool_grade + 
+    career_time_conv  ", data=no_lev_df, family=binomial)
+summary(model_no_lev)
 ```
 
     ## 
     ## Call:
-    ## glm(formula = formula_num, family = binomial, data = numerical_df)
+    ## glm(formula = "dropout ~ stud_career_admission_age + \n    exa_cfu_pass + exa_grade_average + highschool_grade + \n    career_time_conv  ", 
+    ##     family = binomial, data = no_lev_df)
     ## 
     ## Deviance Residuals: 
     ##     Min       1Q   Median       3Q      Max  
-    ## -1.5242  -0.2997  -0.1880  -0.0795   4.4648  
+    ## -1.5814  -0.2776  -0.1834  -0.0874   4.7369  
     ## 
     ## Coefficients:
-    ##                      Estimate Std. Error z value Pr(>|z|)    
-    ## (Intercept)        159.196055  61.229022   2.600  0.00932 ** 
-    ## career_start_ay     -1.641886   0.347964  -4.719 2.38e-06 ***
-    ## exa_cfu_pass        -0.157293   0.010659 -14.757  < 2e-16 ***
-    ## stud_career_end_ay   1.568489   0.345837   4.535 5.75e-06 ***
-    ## highschool_grade    -0.045653   0.008900  -5.130 2.90e-07 ***
-    ## career_time_conv    -0.008830   0.001028  -8.587  < 2e-16 ***
+    ##                             Estimate Std. Error z value Pr(>|z|)    
+    ## (Intercept)                5.6428403  3.4665999   1.628   0.1036    
+    ## stud_career_admission_age  0.3478414  0.1787461   1.946   0.0517 .  
+    ## exa_cfu_pass              -0.1345820  0.0150594  -8.937  < 2e-16 ***
+    ## exa_grade_average         -0.1194297  0.0302602  -3.947 7.92e-05 ***
+    ## highschool_grade          -0.0427510  0.0104675  -4.084 4.42e-05 ***
+    ## career_time_conv          -0.0046433  0.0003238 -14.341  < 2e-16 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
     ## (Dispersion parameter for binomial family taken to be 1)
     ## 
-    ##     Null deviance: 2585.74  on 2462  degrees of freedom
-    ## Residual deviance:  909.23  on 2457  degrees of freedom
-    ## AIC: 921.23
+    ##     Null deviance: 2383.29  on 2317  degrees of freedom
+    ## Residual deviance:  721.67  on 2312  degrees of freedom
+    ## AIC: 733.67
     ## 
-    ## Number of Fisher Scoring iterations: 6
+    ## Number of Fisher Scoring iterations: 7
 
 ``` r
-pseudo_r2 <- pR2(model_back)
+drop1(model_no_lev, test="Chisq")
 ```
 
-    ## fitting null model for pseudo-r2
+    ## Single term deletions
+    ## 
+    ## Model:
+    ## dropout ~ stud_career_admission_age + exa_cfu_pass + exa_grade_average + 
+    ##     highschool_grade + career_time_conv
+    ##                           Df Deviance     AIC    LRT  Pr(>Chi)    
+    ## <none>                         721.67  733.67                     
+    ## stud_career_admission_age  1   725.52  735.52   3.86   0.04959 *  
+    ## exa_cfu_pass               1   808.88  818.88  87.21 < 2.2e-16 ***
+    ## exa_grade_average          1   741.12  751.12  19.46 1.030e-05 ***
+    ## highschool_grade           1   738.28  748.28  16.61 4.595e-05 ***
+    ## career_time_conv           1  1075.54 1085.54 353.87 < 2.2e-16 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 ``` r
-pseudo_r2['McFadden']
+model_no_lev_opt = update(model_no_lev, . ~ . - stud_career_admission_age)
+
+anova(model_no_lev, model_no_lev_opt, test="Chisq")
 ```
 
-    ##  McFadden 
-    ## 0.6483678
+    ## Analysis of Deviance Table
+    ## 
+    ## Model 1: dropout ~ stud_career_admission_age + exa_cfu_pass + exa_grade_average + 
+    ##     highschool_grade + career_time_conv
+    ## Model 2: dropout ~ exa_cfu_pass + exa_grade_average + highschool_grade + 
+    ##     career_time_conv
+    ##   Resid. Df Resid. Dev Df Deviance Pr(>Chi)  
+    ## 1      2312     721.67                       
+    ## 2      2313     725.52 -1  -3.8551  0.04959 *
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 ``` r
-model_opt = model_back
-```
-
-In relazione alla matrice delle covariate descritta prima
-`career_start_ay` e `stud_career_end_ay` sono estremamente correlate,
-vediamo se otteniamo un miglioramento o un peggioramento cancellandone
-una alla volta:
-
-``` r
-model_no_start = glm("dropout ~ 1 + stud_career_admission_age + exa_cfu_pass + 
-    exa_grade_average + stud_career_end_ay + highschool_grade + 
-    career_time_conv", data=numerical_df, family=binomial)
-
-model_no_end = glm("dropout ~ 1 + career_start_ay + stud_career_admission_age + exa_cfu_pass + 
-    exa_grade_average  + highschool_grade + 
-    career_time_conv ", data=numerical_df, family=binomial)
-
-models  = list(model_init, model_opt, model_no_start, model_no_end)
-model.names = c('Modello iniziale', 'Modello Ottimo', 'Modello Senza Anno di Inizio', 'Modello Senza Anno di Fine')
-aictab(cand.set = models, modnames = model.names)
+summary(model_no_lev_opt)
 ```
 
     ## 
-    ## Model selection based on AICc:
+    ## Call:
+    ## glm(formula = dropout ~ exa_cfu_pass + exa_grade_average + highschool_grade + 
+    ##     career_time_conv, family = binomial, data = no_lev_df)
     ## 
-    ##                               K   AICc Delta_AICc AICcWt Cum.Wt      LL
-    ## Modello iniziale             10 908.30       0.00      1      1 -444.10
-    ## Modello Ottimo                6 921.26      12.97      0      1 -454.62
-    ## Modello Senza Anno di Fine    7 928.27      19.98      0      1 -457.11
-    ## Modello Senza Anno di Inizio  7 929.88      21.59      0      1 -457.92
-
-Abbiamo un peggioramento sia se eliminiamo `career_start_ay` che se
-eliminiamo `stud_career_end_ay`, decidiamo, per ora, di mantenere
-invariato il modello.
+    ## Deviance Residuals: 
+    ##     Min       1Q   Median       3Q      Max  
+    ## -1.5134  -0.2774  -0.1832  -0.0910   4.6769  
+    ## 
+    ## Coefficients:
+    ##                     Estimate Std. Error z value Pr(>|z|)    
+    ## (Intercept)       12.0884882  1.1289173  10.708  < 2e-16 ***
+    ## exa_cfu_pass      -0.1350953  0.0150428  -8.981  < 2e-16 ***
+    ## exa_grade_average -0.1202473  0.0301641  -3.986 6.71e-05 ***
+    ## highschool_grade  -0.0429127  0.0104711  -4.098 4.16e-05 ***
+    ## career_time_conv  -0.0046047  0.0003201 -14.385  < 2e-16 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## (Dispersion parameter for binomial family taken to be 1)
+    ## 
+    ##     Null deviance: 2383.29  on 2317  degrees of freedom
+    ## Residual deviance:  725.52  on 2313  degrees of freedom
+    ## AIC: 735.52
+    ## 
+    ## Number of Fisher Scoring iterations: 7
 
 ## Introduzione Interazioni fra Variabili Numeriche
 
@@ -559,40 +475,48 @@ correlate sono `exa_cfu_pass` e `exa_grade_average`, introduciamo la
 loro interazione `exa_cfu_pass*exa_grade_average`:
 
 ``` r
-model_int_years = glm("dropout ~ 1 + stud_career_admission_age + exa_cfu_pass + 
-    exa_grade_average + highschool_grade + 
-    career_time_conv + career_start_ay*stud_career_end_ay", data=numerical_df, family=binomial)
+model_int_grade = glm("dropout ~ 1 + stud_career_admission_age + 
+    exa_cfu_pass + exa_grade_average + highschool_grade + 
+    career_time_conv + exa_cfu_pass*exa_grade_average", data=no_lev_df, family=binomial)
 
-model_int_grades = glm("dropout ~ 1 + stud_career_admission_age + highschool_grade + 
-    career_time_conv + career_start_ay*stud_career_end_ay + 
-    exa_cfu_pass*exa_grade_average", data=numerical_df, family=binomial)
-
-models  = list(model_init, model_opt, model_int_years, model_int_grades)
-model.names = c('Modello iniziale', 'Modello Ottimo',  'Modello con Interazione fra Anni', 'Modello con Interazione fra CFU e Medie')
-aictab(cand.set = models, modnames = model.names)
+gvif(model_1)
 ```
 
-    ## 
-    ## Model selection based on AICc:
-    ## 
-    ##                                          K   AICc Delta_AICc AICcWt Cum.Wt
-    ## Modello con Interazione fra CFU e Medie 10 902.97       0.00   0.88   0.88
-    ## Modello con Interazione fra Anni         9 908.22       5.25   0.06   0.94
-    ## Modello iniziale                        10 908.30       5.33   0.06   1.00
-    ## Modello Ottimo                           6 921.26      18.29   0.00   1.00
-    ##                                              LL
-    ## Modello con Interazione fra CFU e Medie -441.44
-    ## Modello con Interazione fra Anni        -445.07
-    ## Modello iniziale                        -444.10
-    ## Modello Ottimo                          -454.62
-
-Otteniamo un buon miglioramento dell’AIC a fronte di una maggiore
-complessità del modello (Decidere se mantenere o no il nuovo modello).
+    ##                             GVIF df GVIF^(1/(2*df))
+    ## stud_career_admission_age 1.0340  1          1.0169
+    ## exa_cfu_pass              2.4548  1          1.5668
+    ## exa_grade_average         2.4003  1          1.5493
+    ## highschool_grade          1.2878  1          1.1348
+    ## career_time_conv          1.2405  1          1.1138
 
 ``` r
-#Aggiorniamo il migliore modello che  abbiamo trovato finora
-model_opt_int = model_int_grades
+gvif(model_int_grade)
 ```
+
+    ##                                   GVIF df GVIF^(1/(2*df))
+    ## stud_career_admission_age       1.0135  1          1.0067
+    ## exa_cfu_pass                   24.4428  1          4.9440
+    ## exa_grade_average               2.7528  1          1.6592
+    ## highschool_grade                1.1922  1          1.0919
+    ## career_time_conv                1.1260  1          1.0611
+    ## exa_cfu_pass:exa_grade_average 30.1991  1          5.4954
+
+``` r
+anova(model_no_lev_opt, model_int_grade, test="Chisq")
+```
+
+    ## Analysis of Deviance Table
+    ## 
+    ## Model 1: dropout ~ exa_cfu_pass + exa_grade_average + highschool_grade + 
+    ##     career_time_conv
+    ## Model 2: dropout ~ 1 + stud_career_admission_age + exa_cfu_pass + exa_grade_average + 
+    ##     highschool_grade + career_time_conv + exa_cfu_pass * exa_grade_average
+    ##   Resid. Df Resid. Dev Df Deviance Pr(>Chi)
+    ## 1      2313     725.52                     
+    ## 2      2311     721.63  2   3.8987   0.1424
+
+Non accetto il nuovo modello con l’interazione poichè il GVIF è troppo
+elevato.
 
 ## Introduzione delle Variabili Categoriche
 
@@ -600,200 +524,188 @@ Rendiamo tutte le variabili del Dataset di tipo `factor` affinchè siano
 utilizzabili nella regressione logistica.
 
 ``` r
+MODEL = model_no_lev_opt
+
 filtered_df <- df %>% filter(stud_career_status != 'A')
 filtered_df_no_na = na.omit(filtered_df)
 
 #Partendo dal modello di ottimo trovato prima costruisco la matrice solo con quelle covariate:
-new_df <- numerical_df
-new_df$stud_admission_score <- NULL
-new_df$exa_avg_attempts <- NULL
+cat_df <- filtered_df_no_na
 
-new_df$stud_gender = factor(filtered_df_no_na$stud_gender, ordered = F)
-new_df$previousStudies = factor(filtered_df_no_na$previousStudies, ordered = F)
-new_df$origins = factor(filtered_df_no_na$origins, ordered = F)
-new_df$income_bracket_normalized_on4 = factor(filtered_df_no_na$income_bracket_normalized_on4, ordered = F)
-new_df$dropped_on_180 = factor(filtered_df_no_na$dropped_on_180, ordered = F)
+cat_no_lev_df = cat_df[which(!((cat_df$career_time_conv > 1000 & cat_df$exa_cfu_pass==0)| cat_df$career_time_conv<0)),]
 
-#Costruiamo un modello con tutte le variabili categoriche:
-covariate = paste("dropout ~", paste(names(new_df[,-which(names(new_df) == "dropout")]), collapse = " + "))
-interazioni = "+ exa_cfu_pass*exa_grade_average"
-formula_cat <- as.formula(paste(covariate, interazioni))
+cat_no_lev_df$stud_gender = factor(cat_no_lev_df$stud_gender, ordered=F)
+cat_no_lev_df$previousStudies = factor(cat_no_lev_df$previousStudies, ordered=F)
+cat_no_lev_df$origins = factor(cat_no_lev_df$origins, ordered=F)
+cat_no_lev_df$income_bracket_normalized_on4 = factor(cat_no_lev_df$income_bracket_normalized_on4, ordered=F)
 
-model_cat <- glm(formula_cat, data = new_df, family=binomial)
 
-summary(model_cat)
+cat_no_lev_df$dropped_on_180<-NULL
+cat_no_lev_df$stud_career_status <-NULL
+
+
+View(cat_no_lev_df)
 ```
 
-    ## 
-    ## Call:
-    ## glm(formula = formula_cat, family = binomial, data = new_df)
-    ## 
-    ## Deviance Residuals: 
-    ##     Min       1Q   Median       3Q      Max  
-    ## -1.6067  -0.2927  -0.1733  -0.0719   4.5227  
-    ## 
-    ## Coefficients:
-    ##                                             Estimate Std. Error z value
-    ## (Intercept)                               125.233207  66.351881   1.887
-    ## career_start_ay                            -1.692565   0.360471  -4.695
-    ## stud_career_admission_age                   0.391169   0.145986   2.679
-    ## exa_cfu_pass                                0.010737   0.046428   0.231
-    ## exa_grade_average                          -0.035323   0.014614  -2.417
-    ## stud_career_end_ay                          1.631754   0.358633   4.550
-    ## highschool_grade                           -0.032069   0.009797  -3.273
-    ## career_time_conv                           -0.008969   0.001076  -8.334
-    ## stud_genderM                                0.451381   0.200943   2.246
-    ## previousStudiesOthers                       0.334883   0.667823   0.501
-    ## previousStudiesScientifica                  0.146432   0.339348   0.432
-    ## previousStudiesTecnica                      0.838656   0.525260   1.597
-    ## originsForeigner                            0.452706   1.133684   0.399
-    ## originsMilanese                            -0.095533   0.213921  -0.447
-    ## originsOffsite                              0.486111   0.380529   1.277
-    ## income_bracket_normalized_on4fascia bassa   0.075297   0.255259   0.295
-    ## income_bracket_normalized_on4fascia media   0.029749   0.231367   0.129
-    ## income_bracket_normalized_on4LS            -0.341551   0.318997  -1.071
-    ## dropped_on_180Y                            12.081820 585.136163   0.021
-    ## exa_cfu_pass:exa_grade_average             -0.005864   0.001954  -3.001
-    ##                                           Pr(>|z|)    
-    ## (Intercept)                                0.05911 .  
-    ## career_start_ay                           2.66e-06 ***
-    ## stud_career_admission_age                  0.00737 ** 
-    ## exa_cfu_pass                               0.81711    
-    ## exa_grade_average                          0.01565 *  
-    ## stud_career_end_ay                        5.37e-06 ***
-    ## highschool_grade                           0.00106 ** 
-    ## career_time_conv                           < 2e-16 ***
-    ## stud_genderM                               0.02468 *  
-    ## previousStudiesOthers                      0.61605    
-    ## previousStudiesScientifica                 0.66610    
-    ## previousStudiesTecnica                     0.11034    
-    ## originsForeigner                           0.68965    
-    ## originsMilanese                            0.65518    
-    ## originsOffsite                             0.20144    
-    ## income_bracket_normalized_on4fascia bassa  0.76801    
-    ## income_bracket_normalized_on4fascia media  0.89769    
-    ## income_bracket_normalized_on4LS            0.28430    
-    ## dropped_on_180Y                            0.98353    
-    ## exa_cfu_pass:exa_grade_average             0.00269 ** 
+``` r
+male = cat_no_lev_df[which(cat_no_lev_df$stud_gender=="M"),]
+male_mean = mean(male$dropout)
+male_mean
+```
+
+    ## [1] 0.207483
+
+``` r
+female = cat_no_lev_df[which(cat_no_lev_df$stud_gender=="F"),]
+female_mean = mean(female$dropout)
+female_mean
+```
+
+    ## [1] 0.2146226
+
+``` r
+# Facciamo uno z-test con:
+#                       H0: pM == pF
+#                       H1: pM != pF
+
+p_hat = (sum(female$dropout) + sum(male$dropout))/(nrow(cat_no_lev_df))
+
+z_test = (male_mean - female_mean)/sqrt(p_hat*(1-p_hat)*(1/nrow(male) + 1/nrow(female)))
+
+p_value = 2*pnorm(z_test)
+```
+
+Non posso rifiutare H0. Non noto una differenza di probabilità di
+dropout fra maschi e femmine. Non aggiungiamo questa categoria nel
+modello finale.
+
+``` r
+model_anova = aov(cat_no_lev_df$dropout ~ cat_no_lev_df$previousStudies, data=cat_no_lev_df)
+
+summary(model_anova)
+```
+
+    ##                                 Df Sum Sq Mean Sq F value   Pr(>F)    
+    ## cat_no_lev_df$previousStudies    3    5.0  1.6517   10.06 1.38e-06 ***
+    ## Residuals                     2314  379.7  0.1641                     
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ## 
-    ## (Dispersion parameter for binomial family taken to be 1)
-    ## 
-    ##     Null deviance: 2585.74  on 2462  degrees of freedom
-    ## Residual deviance:  871.14  on 2443  degrees of freedom
-    ## AIC: 911.14
-    ## 
-    ## Number of Fisher Scoring iterations: 17
 
 ``` r
-models  = list(model_init, model_opt, model_cat, model_opt_int)
-model.names = c('Modello iniziale', 'Modello Ottimo', 'Modello con Ottimo con Interazione + Categorie', 'Modello Ottimo con Interazione')
-aictab(cand.set = models, modnames = model.names)
+model_anova = aov(cat_no_lev_df$dropout ~ cat_no_lev_df$origins, data=cat_no_lev_df)
+
+summary(model_anova)
 ```
 
-    ## 
-    ## Model selection based on AICc:
-    ## 
-    ##                                                 K   AICc Delta_AICc AICcWt
-    ## Modello Ottimo con Interazione                 10 902.97       0.00   0.92
-    ## Modello iniziale                               10 908.30       5.33   0.06
-    ## Modello con Ottimo con Interazione + Categorie 20 911.49       8.52   0.01
-    ## Modello Ottimo                                  6 921.26      18.29   0.00
-    ##                                                Cum.Wt      LL
-    ## Modello Ottimo con Interazione                   0.92 -441.44
-    ## Modello iniziale                                 0.99 -444.10
-    ## Modello con Ottimo con Interazione + Categorie   1.00 -435.57
-    ## Modello Ottimo                                   1.00 -454.62
-
-**Qui bisogna introdurre i risultati delle analisi fatte con ANOVA, per
-capire quali categorie sono effettivamente importanti e che hanno
-bisogno di essere considerate. Poi procediamo con una ricerca del
-modello che minimizza l’AIC includendo le variabili categoriche.**
-
-**Lo step di minimizzazione lo possiamo cancellare una volta che abbiamo
-ridotto la numerosità di variabili categoriche con l’ANOVA**
-
-Proviamo a migliorarlo con `glmulti()`:
+    ##                         Df Sum Sq Mean Sq F value   Pr(>F)    
+    ## cat_no_lev_df$origins    3    3.2  1.0774   6.536 0.000213 ***
+    ## Residuals             2314  381.5  0.1648                     
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 ``` r
-glmulti.logistic.out <-
-    glmulti(formula_cat, data = new_df,
-            level = 1,               # No interaction considered
-            method = "h",            # Exhaustive approach
-            crit = "aic",            # AIC as criteria
-            confsetsize = 5,         # Keep 5 best models
-            plotty = F, report = F,  # No plot or interim reports
-            fitfunction = "glm",     # glm function
-            family = binomial)       # binomial family for logistic regression
+model_anova = aov(cat_no_lev_df$dropout ~ cat_no_lev_df$income_bracket_normalized_on4, data=cat_no_lev_df)
 
-## Show 5 best models (Use @ instead of $ for an S4 object)
-glmulti.logistic.out@formulas
+summary(model_anova)
 ```
 
-    ## [[1]]
-    ## dropout ~ 1 + stud_gender + career_start_ay + stud_career_admission_age + 
-    ##     exa_cfu_pass + exa_grade_average + stud_career_end_ay + highschool_grade + 
-    ##     career_time_conv
-    ## <environment: 0x5c7f72bb43c8>
-    ## 
-    ## [[2]]
-    ## dropout ~ 1 + career_start_ay + stud_career_admission_age + exa_cfu_pass + 
-    ##     exa_grade_average + stud_career_end_ay + highschool_grade + 
-    ##     career_time_conv
-    ## <environment: 0x5c7f72bb43c8>
-    ## 
-    ## [[3]]
-    ## dropout ~ 1 + stud_gender + dropped_on_180 + career_start_ay + 
-    ##     stud_career_admission_age + exa_cfu_pass + exa_grade_average + 
-    ##     stud_career_end_ay + highschool_grade + career_time_conv
-    ## <environment: 0x5c7f72bb43c8>
-    ## 
-    ## [[4]]
-    ## dropout ~ 1 + dropped_on_180 + career_start_ay + stud_career_admission_age + 
-    ##     exa_cfu_pass + exa_grade_average + stud_career_end_ay + highschool_grade + 
-    ##     career_time_conv
-    ## <environment: 0x5c7f72bb43c8>
-    ## 
-    ## [[5]]
-    ## dropout ~ 1 + stud_gender + previousStudies + career_start_ay + 
-    ##     stud_career_admission_age + exa_cfu_pass + exa_grade_average + 
-    ##     stud_career_end_ay + highschool_grade + career_time_conv
-    ## <environment: 0x5c7f72bb43c8>
+    ##                                               Df Sum Sq Mean Sq F value
+    ## cat_no_lev_df$income_bracket_normalized_on4    3    4.4  1.4752   8.977
+    ## Residuals                                   2314  380.3  0.1643        
+    ##                                               Pr(>F)    
+    ## cat_no_lev_df$income_bracket_normalized_on4 6.54e-06 ***
+    ## Residuals                                               
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
-Notiamo che il modello suggerito contiene la variabile categorica
-`stud_gender`. Osserviamo il modello ottimale trovato e compariamolo al
-modello iniziale, al modello ottimale trovato finora e a quest’ultimo
-con l’aggiunta di `stud_gender`:
+Aggiungere dei boxplot
 
 ``` r
-model_opt_cat = glm("dropout ~ 1 + stud_gender + career_start_ay + stud_career_admission_age + 
-    exa_cfu_pass + exa_grade_average + stud_career_end_ay + highschool_grade + 
-    career_time_conv", data=new_df, family=binomial)
+model_cat = glm("dropout ~ 1 + 
+    exa_cfu_pass + exa_grade_average + highschool_grade + 
+    career_time_conv + previousStudies + origins + income_bracket_normalized_on4", data=cat_no_lev_df, family=binomial)
 
-model_opt_stud_gender = glm("dropout ~ 1 + stud_career_admission_age + highschool_grade + 
-    career_time_conv + career_start_ay*stud_career_end_ay + 
-    exa_cfu_pass*exa_grade_average + stud_gender ", data=new_df, family=binomial)
 
-models  = list(model_init, model_opt, model_opt_cat, model_opt_stud_gender)
-model.names = c('Modello iniziale', 'Modello Ottimizzato', 'Modello con Categorie Ottimizzato', 'Modello Ottimo + Categoria stud_gender')
-aictab(cand.set = models, modnames = model.names)
+drop1(model_cat, test="Chisq")
 ```
 
+    ## Single term deletions
     ## 
-    ## Model selection based on AICc:
+    ## Model:
+    ## dropout ~ 1 + exa_cfu_pass + exa_grade_average + highschool_grade + 
+    ##     career_time_conv + previousStudies + origins + income_bracket_normalized_on4
+    ##                               Df Deviance     AIC    LRT  Pr(>Chi)    
+    ## <none>                             712.66  740.66                     
+    ## exa_cfu_pass                   1   792.95  818.95  80.29 < 2.2e-16 ***
+    ## exa_grade_average              1   735.65  761.65  22.99 1.627e-06 ***
+    ## highschool_grade               1   729.74  755.74  17.08 3.588e-05 ***
+    ## career_time_conv               1  1062.19 1088.19 349.52 < 2.2e-16 ***
+    ## previousStudies                3   718.53  740.53   5.87    0.1182    
+    ## origins                        3   714.79  736.79   2.12    0.5471    
+    ## income_bracket_normalized_on4  3   717.69  739.69   5.03    0.1696    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+``` r
+model_cat = update(model_cat,  . ~ . - origins)
+drop1(model_cat, test="Chisq")
+```
+
+    ## Single term deletions
     ## 
-    ##                                         K   AICc Delta_AICc AICcWt Cum.Wt
-    ## Modello Ottimo + Categoria stud_gender 11 899.35       0.00   0.94   0.94
-    ## Modello con Categorie Ottimizzato       9 905.46       6.11   0.04   0.99
-    ## Modello iniziale                       10 908.30       8.94   0.01   1.00
-    ## Modello Ottimizzato                     6 921.26      21.91   0.00   1.00
-    ##                                             LL
-    ## Modello Ottimo + Categoria stud_gender -438.62
-    ## Modello con Categorie Ottimizzato      -443.69
-    ## Modello iniziale                       -444.10
-    ## Modello Ottimizzato                    -454.62
+    ## Model:
+    ## dropout ~ exa_cfu_pass + exa_grade_average + highschool_grade + 
+    ##     career_time_conv + previousStudies + income_bracket_normalized_on4
+    ##                               Df Deviance     AIC    LRT  Pr(>Chi)    
+    ## <none>                             714.79  736.79                     
+    ## exa_cfu_pass                   1   796.21  816.21  81.42 < 2.2e-16 ***
+    ## exa_grade_average              1   737.69  757.69  22.91 1.699e-06 ***
+    ## highschool_grade               1   730.56  750.56  15.77 7.140e-05 ***
+    ## career_time_conv               1  1064.22 1084.22 349.43 < 2.2e-16 ***
+    ## previousStudies                3   720.95  736.95   6.16    0.1040    
+    ## income_bracket_normalized_on4  3   719.95  735.95   5.16    0.1605    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
-Rigettiamo quindi il modello
+``` r
+model_cat = update(model_cat,  . ~ . - income_bracket_normalized_on4)
+drop1(model_cat, test="Chisq")
+```
 
-## Introduzione delle Interazioni
+    ## Single term deletions
+    ## 
+    ## Model:
+    ## dropout ~ exa_cfu_pass + exa_grade_average + highschool_grade + 
+    ##     career_time_conv + previousStudies
+    ##                   Df Deviance     AIC    LRT  Pr(>Chi)    
+    ## <none>                 719.95  735.95                     
+    ## exa_cfu_pass       1   801.43  815.43  81.49 < 2.2e-16 ***
+    ## exa_grade_average  1   741.28  755.28  21.33 3.860e-06 ***
+    ## highschool_grade   1   735.97  749.97  16.02 6.252e-05 ***
+    ## career_time_conv   1  1071.00 1085.00 351.06 < 2.2e-16 ***
+    ## previousStudies    3   725.52  735.52   5.58     0.134    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+``` r
+model_cat = update(model_cat,  . ~ . - previousStudies)
+drop1(model_cat, test="Chisq")
+```
+
+    ## Single term deletions
+    ## 
+    ## Model:
+    ## dropout ~ exa_cfu_pass + exa_grade_average + highschool_grade + 
+    ##     career_time_conv
+    ##                   Df Deviance     AIC    LRT  Pr(>Chi)    
+    ## <none>                 725.52  735.52                     
+    ## exa_cfu_pass       1   813.60  821.60  88.07 < 2.2e-16 ***
+    ## exa_grade_average  1   745.46  753.46  19.93 8.029e-06 ***
+    ## highschool_grade   1   742.27  750.27  16.74 4.283e-05 ***
+    ## career_time_conv   1  1077.77 1085.77 352.25 < 2.2e-16 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Abbiamo trovato che il modello non ha bisogno di covariate categoriche.
+
+## Confusion Matrix
