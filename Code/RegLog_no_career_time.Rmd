@@ -188,25 +188,6 @@ sum( lev [ lev >  2 * p / n ] ) # 1.36234/5= 0.272468 i leverages pesano quasi i
 
 ```
 
-```{r}
-no_lev_df = numerical_df[which(!((numerical_df$career_time_conv > 1000 & numerical_df$exa_cfu_pass==0)| numerical_df$career_time_conv<0 )),]
-
-model_no_lev = glm("dropout ~ stud_career_admission_age + 
-    exa_cfu_pass + exa_grade_average + highschool_grade + 
-    career_time_conv  ", data=no_lev_df, family=binomial)
-summary(model_no_lev)
-```
-
-```{r}
-drop1(model_no_lev, test="Chisq")
-
-model_no_lev_opt = update(model_no_lev, . ~ . - stud_career_admission_age)
-
-anova(model_no_lev, model_no_lev_opt, test="Chisq")
-
-summary(model_no_lev_opt)
-```
-
 ## Introduzione Interazioni fra Variabili Numeriche
 
 Prima di procedere con l'aggiunta di variabili categoriche cerchiamo di comprendere se le aggiunte di interazioni fra variabili numeriche ci permettono di migliorare il nostro modello. Osservando la matrice delle covariate costruita all'inizio possiamo osservare che `career_start_ay` e `stud_career_end_ay` sono estremamente correlate, aggiungiamo quindi al modello: `career_start_ay*stud_career_end_ay`. Seguendo lo stesso ragionamento un'altra coppia di covariate che appaiono essere molto correlate sono `exa_cfu_pass` e `exa_grade_average`, introduciamo la loro interazione `exa_cfu_pass*exa_grade_average`:
