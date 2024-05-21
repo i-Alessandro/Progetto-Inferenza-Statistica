@@ -537,7 +537,7 @@ train <- cat_no_lev_df[ trainIndex,]
 test  <- cat_no_lev_df[-trainIndex,]
 
 # Fit the logistic regression model
-fit <- glm("dropout ~ 1 + exa_cfu_pass + exa_grade_average + previousStudies + origins", data = train, family = binomial)
+fit <- glm("dropout ~ 1 + exa_cfu_pass + exa_grade_average + previousStudies + stud_gender", data = train, family = binomial)
 
 # Make predictions on the test set
 predicted_probs <- predict(fit, newdata = test, type = "response")
@@ -569,23 +569,23 @@ auc <- auc(roc_obj)
 print(auc)
 ```
 
-    ## Area under the curve: 0.9578
+    ## Area under the curve: 0.9589
 
 ``` r
 #trovare soglia opt
-best=coords(roc_obj, "best", ret="threshold", best.method="youden")
-print(best)
+be=coords(roc_obj, "best", ret="threshold", best.method="youden")
+print(be)
 ```
 
     ##   threshold
-    ## 1 0.3265654
+    ## 1 0.1941209
 
 ``` r
 #
 test$dropout=as.factor(test$dropout)
 
 # Compute the confusion matrix
-predicted_classes <- ifelse(predicted_probs > 0.1915817, 1, 0)
+predicted_classes <- ifelse(predicted_probs > as.numeric(be), 1, 0)
 predicted_classes=as.factor(predicted_classes)
 
 cm <- confusionMatrix(predicted_classes, test$dropout)
@@ -596,28 +596,28 @@ print(cm)
     ## 
     ##           Reference
     ## Prediction   0   1
-    ##          0 277  11
-    ##          1  37  96
-    ##                                           
-    ##                Accuracy : 0.886           
-    ##                  95% CI : (0.8517, 0.9147)
-    ##     No Information Rate : 0.7458          
-    ##     P-Value [Acc > NIR] : 6.393e-13       
-    ##                                           
-    ##                   Kappa : 0.7216          
-    ##                                           
-    ##  Mcnemar's Test P-Value : 0.000308        
-    ##                                           
-    ##             Sensitivity : 0.8822          
-    ##             Specificity : 0.8972          
-    ##          Pos Pred Value : 0.9618          
-    ##          Neg Pred Value : 0.7218          
-    ##              Prevalence : 0.7458          
-    ##          Detection Rate : 0.6580          
-    ##    Detection Prevalence : 0.6841          
-    ##       Balanced Accuracy : 0.8897          
-    ##                                           
-    ##        'Positive' Class : 0               
+    ##          0 279  10
+    ##          1  35  97
+    ##                                          
+    ##                Accuracy : 0.8931         
+    ##                  95% CI : (0.8596, 0.921)
+    ##     No Information Rate : 0.7458         
+    ##     P-Value [Acc > NIR] : 3.055e-14      
+    ##                                          
+    ##                   Kappa : 0.7382         
+    ##                                          
+    ##  Mcnemar's Test P-Value : 0.0003466      
+    ##                                          
+    ##             Sensitivity : 0.8885         
+    ##             Specificity : 0.9065         
+    ##          Pos Pred Value : 0.9654         
+    ##          Neg Pred Value : 0.7348         
+    ##              Prevalence : 0.7458         
+    ##          Detection Rate : 0.6627         
+    ##    Detection Prevalence : 0.6865         
+    ##       Balanced Accuracy : 0.8975         
+    ##                                          
+    ##        'Positive' Class : 0              
     ## 
 
 ## Predizione sugli studenti in corso:
@@ -682,14 +682,14 @@ Costruiamo la predizione per gli attivi:
 ``` r
 predizione <- predict(model_opt, newdata = attivi_df, type = "response")
 
-binary_output <- ifelse(predizione > 0.5, 1, 0)
+binary_output <- ifelse(predizione > as.numeric(be), 1, 0)
 
 attivi_df$dropout_prediction = binary_output
 
 sum(binary_output)/length(binary_output)
 ```
 
-    ## [1] 0.2
+    ## [1] 0.368254
 
 ``` r
 View(attivi_df)

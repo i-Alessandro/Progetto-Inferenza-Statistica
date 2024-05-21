@@ -275,8 +275,6 @@ Abbiamo trovato che il modello ha bisogno di covariate categoriche, ovvero: stud
 ## Confusion Matrix
 
 ```{r}
-
-
 # Assume you have a dataframe data with predictors and a response variable
 # split the data into train and test
 set.seed(123)
@@ -288,7 +286,7 @@ train <- cat_no_lev_df[ trainIndex,]
 test  <- cat_no_lev_df[-trainIndex,]
 
 # Fit the logistic regression model
-fit <- glm("dropout ~ 1 + exa_cfu_pass + exa_grade_average + previousStudies + origins", data = train, family = binomial)
+fit <- glm("dropout ~ 1 + exa_cfu_pass + exa_grade_average + previousStudies + stud_gender", data = train, family = binomial)
 
 # Make predictions on the test set
 predicted_probs <- predict(fit, newdata = test, type = "response")
@@ -310,13 +308,13 @@ auc <- auc(roc_obj)
 print(auc)
 
 #trovare soglia opt
-best=coords(roc_obj, "best", ret="threshold", best.method="youden")
-print(best)
+be=coords(roc_obj, "best", ret="threshold", best.method="youden")
+print(be)
 #
 test$dropout=as.factor(test$dropout)
 
 # Compute the confusion matrix
-predicted_classes <- ifelse(predicted_probs > 0.1915817, 1, 0)
+predicted_classes <- ifelse(predicted_probs > as.numeric(be), 1, 0)
 predicted_classes=as.factor(predicted_classes)
 
 cm <- confusionMatrix(predicted_classes, test$dropout)
@@ -355,7 +353,7 @@ Costruiamo la predizione per gli attivi:
 ```{r}
 predizione <- predict(model_opt, newdata = attivi_df, type = "response")
 
-binary_output <- ifelse(predizione > 0.5, 1, 0)
+binary_output <- ifelse(predizione > as.numeric(be), 1, 0)
 
 attivi_df$dropout_prediction = binary_output
 
