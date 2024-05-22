@@ -92,7 +92,7 @@ numerical_df$career_time_conv <- NULL
 #View(numerical_df)
 ```
 
-Osserviamo se esistono correlazioni significative fra i dati numerici:
+Osserviamo se esistono correlazioni significative fra le variabili numeriche:
 
 ``` r
 X = numerical_df[, -4]
