@@ -6,6 +6,7 @@ Alessandro Wiget, Sofia Sannino, Pietro Masini, Giulia Riccardi
 ## Librerie
 
 ``` r
+#carichiamo le librerie utili per il progetto
 library(readxl)
 library(dplyr)
 library( faraway )
@@ -31,9 +32,9 @@ setwd("C:/Users/lenovo/OneDrive/Documenti/R")
 
 Prima di tutto definiamo la working directory:
 
-IMPORTANTE! Cambiare la directoy a seconda del pc.
+IMPORTANTE! Cambiare la directory a seconda del pc.
 
-Importiamo il Dataset, presente nella cartella `Dati/`:
+Importiamo il Dataset:
 
 ``` r
 setwd("C:/Users/lenovo/OneDrive/Documenti/R")
@@ -44,11 +45,11 @@ df <- read_excel("Dropout20240226_IngMate.xlsx")
 
 ## Regressione Logistica
 
-Consideriamo innanzitutto solo gli studenti con carriere terminate, cioè
+Consideriamo innanzitutto solo gli studenti con carriere terminate, i non attivi del dataset, cioè
 o che si sono laureati o che hanno abbandonato il corso di studio:
 
 ``` r
-#togliamo covariate inutili, togliamo gli attivi dei quali non sappiamoa ancora si hanno droppato o no.
+#togliamo covariate inutili (gli studenti appartegono tutti al corso di ingegneria matematica, l'id è inutile...
 df$career_anonymous_id <- NULL
 df$career_time <- NULL
 df$stud_career_degree_start_id <- NULL
@@ -79,6 +80,7 @@ abline( h=1200, lty = 2, col = 'red' )
 ```
 
 ![](regres_log_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+#eseguiamo la nostra analisi su studenti di una certa finestra temporale: eliminiamo coloro che si erano immatricolati a luglio (prima finestra) e poi non hanno iniziato il corso di laurea, eliminiamo coloro che dopo 3 anni non hanno ancora dato esami e chi è iscritto da più di 4 anni e mezzo.
 
 ``` r
 numerical_df = numerical_df[which(!((numerical_df$career_time_conv > 1000 & numerical_df$exa_cfu_pass==0)| numerical_df$career_time_conv<0)),]
@@ -100,7 +102,7 @@ corrplot(cor(X), method='color')
 ## La Prima Regressione Logistica
 
 Effettuiamo la regressione logistica fra le variabili numeriche del
-dataset, e vediamo quanto vale inizialmente lo pseudo adjustedR2:
+dataset, e vediamo quanto vale inizialmente lo pseudo adjustedR2(indice di McFadden):
 
 ``` r
 # Create a formula for linear model
@@ -151,10 +153,10 @@ pseudo_r2['McFadden']
     ##  McFadden 
     ## 0.5505247
 
-Iniziamo da un modello con uno pseudo adjusted R^2 relativamente buono,
+Iniziamo da un modello con uno pseudo-adjusted R^2 relativamente buono,
 ma notiamo che il modello presenta molte covariate non significative,
-pertanto operiamo una ricerca backward per eliminare quelle non
-rilevanti.
+pertanto operiamo una backward selection per eliminare quelle non
+rilevanti. Utilizziamo il comando drop che opera un test Chiquadro di confronto tra due modelli.
 
 ``` r
 covariate = paste("dropout ~", paste(names(numerical_df[,-which(names(numerical_df) == "dropout")]), collapse = " + "))
@@ -299,11 +301,11 @@ drop1(model_back, test="Chisq")
 #-------------------------------
 ```
 
-Il modello risultante presenta due covariate numeriche significative.
+Il modello risultante presenta due covariate numeriche significative: i cfu sostenuti al termine del primo semestre e la media (del primo semestre).
 
 ## Analisi dei Punti Influenti
 
-Valutiamo l’impatto sul modello di eventuali punti leva e outliers.
+Valutiamo l’impatto sul modello di eventuali punti leva.
 Partiamo dai punti leva:
 
 ``` r
@@ -410,12 +412,7 @@ summary(mod)
 Prima di procedere con l’aggiunta di variabili categoriche cerchiamo di
 comprendere se le aggiunte di interazioni fra variabili numeriche ci
 permettono di migliorare il nostro modello. Osservando la matrice delle
-covariate costruita all’inizio possiamo osservare che `career_start_ay`
-e `stud_career_end_ay` sono estremamente correlate, aggiungiamo quindi
-al modello: `career_start_ay*stud_career_end_ay`. Seguendo lo stesso
-ragionamento un’altra coppia di covariate che appaiono essere molto
-correlate sono `exa_cfu_pass` e `exa_grade_average`, introduciamo la
-loro interazione `exa_cfu_pass*exa_grade_average`:
+covariate costruita all’inizio possiamo osservare che cfu sostenuti e media esami sono molto correlate. Introduciamo quindi il termine di interazione `exa_cfu_pass*exa_grade_average`:
 
 ``` r
 mod_int = update(mod, . ~ . + exa_cfu_pass*exa_grade_average)
@@ -459,7 +456,7 @@ anova(mod, mod_int, test="Chisq")
     ## 1      2315     1078.8                     
     ## 2      2314     1077.3  1    1.494   0.2216
 
-p-value alto i due modelli sono equivalenti
+Dal momento che il p-value è alto, i due modelli sono equivalenti, pertanto seleziono il modello più semplice, rigettando il termine di interazione.
 
 ## Introduzione delle Variabili Categoriche
 
@@ -492,47 +489,7 @@ cat_no_lev_df$stud_career_status <-NULL
 #View(cat_no_lev_df)
 ```
 
-\#da togliere
-
-``` r
-male = cat_no_lev_df[which(cat_no_lev_df$stud_gender=="M"),]
-male_mean = mean(male$dropout)
-male_mean
-```
-
-    ## [1] 0.2138554
-
-``` r
-female = cat_no_lev_df[which(cat_no_lev_df$stud_gender=="F"),]
-female_mean = mean(female$dropout)
-female_mean
-```
-
-    ## [1] 0.225641
-
-``` r
-# Facciamo uno z-test con:
-#                       H0: pM == pF
-#                       H1: pM != pF
-
-p_hat = (sum(female$dropout) + sum(male$dropout))/(nrow(cat_no_lev_df))
-
-z_test = (male_mean - female_mean)/sqrt(p_hat*(1-p_hat)*(1/nrow(male) + 1/nrow(female)))
-z_test
-```
-
-    ## [1] -0.6325225
-
-``` r
-p_value = 2*pnorm(z_test)
-p_value
-```
-
-    ## [1] 0.5270455
-
-Non posso rifiutare H0. Non noto una differenza di probabilità di
-dropout fra maschi e femmine. Non aggiungiamo questa categoria nel
-modello finale.
+#aggiorno il modello considerando le variabili categoriche.
 
 ``` r
 model_cat = glm("dropout ~ 1 + 
