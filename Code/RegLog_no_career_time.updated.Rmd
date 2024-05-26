@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Librerie
-
+Aggiungiamo le librerie necessarie per l'analisi:
 ```{r, results='hide', warning= FALSE, message=FALSE}
 library(readxl)
 library(dplyr)
@@ -35,11 +35,7 @@ setwd("C:/Users/lenovo/OneDrive/Documenti/R")
 
 ## Il Dataset
 
-Prima di tutto definiamo la working directory:
-
-IMPORTANTE! Cambiare la directoy a seconda del pc.
-
-Importiamo il Dataset, presente nella cartella `Dati/`:
+Impostiamo la working directory e importiamo il dataset presente nella cartella `Dati/`:
 
 ```{r}
 setwd("C:/Users/lenovo/OneDrive/Documenti/R")
@@ -50,11 +46,9 @@ df <- read_excel("Dropout20240226_IngMate.xlsx")
 
 ## Regressione Logistica
 
-Consideriamo innanzitutto solo gli studenti con carriere terminate, cioè o che si sono laureati o che hanno abbandonato il corso di studio:
+Effettuiamo una pulizia del dataset, eliminando le variabili inutili o che non utilizzeremo nel modello. Successivamente selezioniamo solamente gli studenti che hanno Completato la loro carriera (o laureandosi o abbandonando gli studi):
 
 ```{r}
-
-#togliamo covariate inutili, togliamo gli attivi dei quali non sappiamoa ancora si hanno droppato o no.
 df$career_anonymous_id <- NULL
 df$career_time <- NULL
 df$stud_career_degree_start_id <- NULL
