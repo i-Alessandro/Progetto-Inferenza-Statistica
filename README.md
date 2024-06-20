@@ -21,19 +21,18 @@ Il progetto si concentra sull'analisi statistica di dati raccolti in un determin
 
 - R 4.2.2 o versione successiva
 - (Suggerito) RStudio 2024.4.1 + 748 o versione successiva
-- Un compilatore per LaTex o Overleaf (Nel caso si volesse compilare i file .tex presenti)
+- Un compilatore per LaTex o Overleaf (Nel caso si volesse compilare i file .tex presenti). I file latex presenti nella cartella presentazione sono presi dal progetto di boris-il-forte chiamato beamer-polimi-x.
 
 ## Istruzioni per l'installazione
 
 1. Clonare il repository sul proprio computer.
 2. Assicurarsi di avere R 4.2.2 o una versione successiva installata.
-3. Installare i pacchetti Python necessari eseguendo il comando `pip install -r requirements.txt`.
+3. Installare i pacchetti R necessari, sono elencati all'inizio del file markdown nella cartella `Code/`.
 
 ## Utilizzo
 
 1. Assicurarsi di avere i dati necessari nella cartella `Dati/`.
 2. Eseguire il codice sorgente presente nella cartella `Code/` utilizzando RStudio.
-3. I risultati delle analisi saranno salvati nella cartella `Risultati/`.
 
 ## Contributi
 

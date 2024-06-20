@@ -30,7 +30,7 @@ library(caret)
 library(pROC)
 library(e1071)
 library(stats)
-setwd("C:/Users/alewi/Documents/University/HKUST & PoliMi/II Semestre/Inferenza Statistica/Progetto/")
+setwd("C:/Users/alewi/Documents/University/HKUST & PoliMi/II Semestre/Inferenza Statistica/Progetto/Code")
 ```
 
 ## Il Dataset
@@ -42,7 +42,7 @@ IMPORTANTE! Cambiare la directoy a seconda del pc.
 Importiamo il Dataset, presente nella cartella `Dati/`:
 
 ```{r}
-#setwd("C:/Users/sanni/OneDrive/Desktop/POLIMI/3 anno/inferenza/Progetto-Inferenza-Statistica-main")
+setwd("C:/Users/alewi/Documents/University/HKUST & PoliMi/II Semestre/Inferenza Statistica/Progetto/Code")
 library(readxl)
 df <- read_excel("../Dati/Dropout20240226_IngMate.xlsx")
 #View(df)
@@ -70,6 +70,9 @@ df$stud_career_degree_area <- NULL
 df$stud_career_degree_code <- NULL
 df$stud_career_degree_code_CdS <-NULL
 df$highschool_type <- NULL
+hist(df$stud_career_admission_age,main="Età di ingresso degli studenti", xlab="Età", ylab="Numero studenti")
+df$stud_career_admission_age<-NULL
+
 df$highschool_type_code <- NULL #abbiamo cancellato queste variabili perchè possiamo separare fra classico, scientifico e altro con un'altra variabile
 df$stud_admis_convent_start_dt <- NULL
 df$stud_career_end_ay <-NULL
@@ -88,7 +91,7 @@ numerical_df <- filtered_df[, numerical_vars]
 numerical_df = na.omit(numerical_df)
 
 #analisi esplorativa dei dati: notiamo che ci sono persone che non hanno iniziato il poli e in più ci sono persone che sono iscritte da 3 anni o più 
-plot(numerical_df$exa_cfu_pass, numerical_df$career_time_conv)
+plot(numerical_df$exa_cfu_pass, numerical_df$career_time_conv,,xlab="cfu sostenuti",ylab="giorni di iscrizione")
 abline( h=1200, lty = 2, col = 'red' )
 
 #RITENIAMO A QUESTO PUNTO LA VARIABILE TEMPO NON RILEVANTE PERCHE' A NOI INTERESSA PREVEDERE IL DROPOUT ED EVITARLO, PROGETTANDO UN'AZIONE BASATA SU DATI DEL PRIMO SEMESTRE DEL PRIMO ANNO E PORTATA AVANTI IMMEDIATATAMENTE IL PRIMO ANNO STESSO. IL FATTO CHE LA CARRIERA DURI PIU O MENO E' FUORI CONTESTO: NOI VOGLIAMO CHE Y=0. 
@@ -102,7 +105,8 @@ numerical_df$career_time_conv <- NULL
 Osserviamo se esistono correlazioni significative fra i dati numerici:
 
 ```{r}
-X = numerical_df[, -4]
+X = numerical_df[, -3]
+X=X[,-1]
 corrplot(cor(X), method='color')
 ```
 
@@ -247,6 +251,7 @@ Prima di procedere con l'analisi delle variabili categoriche cerchiamo di compre
 mod_int = update(mod, . ~ . + exa_cfu_pass*exa_grade_average)
 
 summary(mod_int)
+anova(mod,mod_int)
 ```
 Il p-value della covariata relativa a `exa_cfu_pass` è alto pertanto il termine di interazione è da escludere in quanto non aggiunge nulla al modello.
 
@@ -297,7 +302,7 @@ drop1(model_cat, test="Chisq")
 
 model_cat = update(model_cat,  . ~ . - stud_gender)
 drop1(model_cat, test="Chisq")
-
+anova(model_cat,mod)
 model_cat = update(model_cat,  . ~ . - previousStudies)
 drop1(model_cat, test="Chisq")
 
@@ -375,7 +380,7 @@ attivi_df$dropout <- NULL
 attivi_df$stud_career_end_date <- NULL
 attivi_df = na.omit(attivi_df)
 #attivi_df = attivi_df[which(!((attivi_df$career_time_conv > 1000 & attivi_df$exa_cfu_pass==0) | attivi_df$career_start_ay!=2023 | attivi_df$career_time_conv<177)),]
-attivi_df = attivi_df[which((attivi_df$career_start_ay==2023)),]
+attivi_df = attivi_df[which((attivi_df$career_start_ay==2023)|(attivi_df$career_start_ay==2022)|(attivi_df$career_start_ay==2021)),]
 #attivi_df$stud_gender = factor(attivi_df$stud_gender, ordered=F)
 #attivi_df$previousStudies = factor(attivi_df$previousStudies, ordered=F)
 
@@ -385,7 +390,7 @@ attivi_df = attivi_df[which((attivi_df$career_start_ay==2023)),]
 Il modello ottimale è il seguente:
 
 ```{r}
-model_opt = glm("dropout ~ 1 + exa_cfu_pass + exa_grade_average + highschool_grade", data = train, family=binomial)
+model_opt = glm("dropout ~ 1 + exa_cfu_pass + exa_grade_average ", data = train, family=binomial)
 summary(model_opt)
 
 ```
@@ -395,7 +400,7 @@ Eseguiamo la predizione sugli studenti attivi presenti nel nostro modello, utili
 ```{r}
 predizione <- predict(model_opt, newdata = attivi_df, type = "response")
 
-binary_output <- ifelse(predizione > as.numeric(best), 1, 0)
+binary_output <- ifelse(predizione > round(as.numeric(best),1), 1, 0)
 
 attivi_df$dropout_prediction = binary_output
 
@@ -406,62 +411,72 @@ sum(binary_output)/length(binary_output)
 
 La probabilità di dropout stimata è del 37% circa, che sovrastima quella rilevata sugli studenti a carriera conclusa (mean(predicted_probs)=25.63 %). Questo è ragionevole considerando che l'obiettivo è prevenire il dropout, quindi in un'ottica di prevenzione, una sovrastima è accettabile.
 
-
-## Cross Validation
-
-Effettuiamo una cross validation per valutare la bontà del modello.
-
-I modelli: 
 ```{r}
-library(boot)
-model1 = glm("dropout ~ 1 + exa_cfu_pass + exa_grade_average + highschool_grade", data = cat_no_lev_df, family = binomial)
-model2 = glm("dropout ~ 1 + exa_cfu_pass + exa_grade_average", data = cat_no_lev_df, family = binomial)
-model3 = glm("dropout ~ 1 + exa_cfu_pass + exa_grade_average + highschool_grade + exa_cfu_pass*exa_grade_average", data = cat_no_lev_df, family = binomial)
-model4 = glm("dropout ~ 1 + exa_cfu_pass + exa_grade_average + previousStudies + highschool_grade", data=cat_no_lev_df, family=binomial)
 
-delta1 = cv.glm(data=cat_no_lev_df, glmfit=model1,K=10)$delta[1]
-delta2 = cv.glm(cat_no_lev_df, model2,K=10)$delta[1]
-delta3 = cv.glm(cat_no_lev_df, model3,K=10)$delta[1]
-delta4 = cv.glm(cat_no_lev_df, model4,K=10)$delta[1]
 
-y = c(delta1, delta2, delta3, delta4)
+set.seed(123) # For reproducibility
+# Define number of folds
+K <- 10
+sensitivity_value1=rep(0,10)
+sensitivity_value2=rep(0,10)
+sensitivity_value3=rep(0,10)
+sensitivity_value4=rep(0,10)
+# Shuffle the data
+cat_no_lev_df <- cat_no_lev_df[sample(nrow(cat_no_lev_df)),]
+#View(cat_no_lev_df)
+# Create K equally sized folds
+folds <- cut(seq(1, nrow(cat_no_lev_df)), breaks=K, labels=FALSE)
 
-plot(1:4, y, type = "b", xlab = "Model", ylab = "CV delta", main = "Cross Validation", ylim = c(0.05,0.07),xaxt = "n")
-axis(1, at = 1:4, labels = c("Model 1", "Model 2", "Model 3", "Model 4"))
-```
+
+# Perform K-fold cross-validation
+for(i in 1:K) {
+  # Segment the data by fold using the which() function
+  test_indices <- which(folds == i, arr.ind=TRUE)
+  test_data <- cat_no_lev_df[test_indices, ]
+  train_data <- cat_no_lev_df[-test_indices, ]
+  # Train your model (using a simple logistic regression for this example)
+ model1 = glm("dropout ~ 1 + exa_cfu_pass + exa_grade_average ", data = train_data, family = binomial)
+model2 = glm("dropout ~ 1 + exa_cfu_pass + exa_grade_average+highschool_grade", data = train_data, family = binomial)
+model3 = glm("dropout ~ 1 + exa_cfu_pass + exa_grade_average + highschool_grade + exa_cfu_pass*exa_grade_average", data = train_data, family = binomial)
+model4 = glm("dropout ~ 1 + exa_cfu_pass + exa_grade_average + previousStudies + highschool_grade", data=train_data, family=binomial)
+
   
-```{r}
-# Load the required library
-library(shiny)
-
-model = glm("dropout ~ 1 + exa_cfu_pass + exa_grade_average", data = cat_no_lev_df, family = binomial)
-
-# Define the UI
-ui <- fluidPage(
-  sliderInput("cfu", "CFU", min = 0, max = 40, value = 27),
-  sliderInput("voti", "Voti", min = 0, max = 30, value = 18),
-  textOutput("sliderValues")
-)
-
-
-# Define the server logic
-server <- function(input, output) {
-    create_dataframe <- function(cfu, voti) {
-    # Create a dataframe
-    df <- data.frame(CFU = cfu, Voti = voti)
-    
-    # Return the dataframe
-    return(df)
-    }
-    create_dataframe(input$cfu, input$voti)
-  output$dataframe <- renderTable({
-    
-    
-  })
+  # Make predictions on the test data
+  predictions1 <- predict(model1, test_data, type="response")
+  predictions2 <- predict(model2, test_data, type="response")
+  predictions3 <- predict(model3, test_data, type="response")
+  predictions4 <- predict(model4, test_data, type="response")
+  roc_obj1 <- roc(test_data$dropout, predictions1)
+  b1=coords(roc_obj1, "best", ret="threshold", best.method="youden")
+  roc_obj2 <- roc(test_data$dropout, predictions2)
+  b2=coords(roc_obj2, "best", ret="threshold", best.method="youden")
+  roc_obj3 <- roc(test_data$dropout, predictions3)
+  b3=coords(roc_obj3, "best", ret="threshold", best.method="youden")
+  roc_obj4 <- roc(test_data$dropout, predictions4)
+  b4=coords(roc_obj4, "best", ret="threshold", best.method="youden")
   
-
+  predicted_classes1 <- ifelse(as.numeric(predictions1) > as.numeric(b1), 1, 0)
+  predicted_classes2 <- ifelse(as.numeric(predictions2) > as.numeric(b2), 1, 0)
+  predicted_classes3 <- ifelse(as.numeric(predictions3) > as.numeric(b3), 1, 0)
+  predicted_classes4 <- ifelse(as.numeric(predictions4) > as.numeric(b4), 1, 0)
+  predicted_classes1=as.factor(predicted_classes1)
+  predicted_classes2=as.factor(predicted_classes2)
+  predicted_classes3=as.factor(predicted_classes3)
+  predicted_classes4=as.factor(predicted_classes4)
+  test_data$dropout=as.factor(test_data$dropout)
+  cm1 <- confusionMatrix(predicted_classes1, test_data$dropout)
+  cm2<- confusionMatrix(predicted_classes2, test_data$dropout)
+  cm3<- confusionMatrix(predicted_classes3, test_data$dropout)
+  cm4<- confusionMatrix(predicted_classes4, test_data$dropout)
+  sensitivity_value1[i] <- cm1$byClass["Sensitivity"]
+  sensitivity_value2[i] <- cm2$byClass["Sensitivity"]
+  sensitivity_value3[i] <- cm3$byClass["Sensitivity"]
+  sensitivity_value4[i] <- cm4$byClass["Sensitivity"]
 }
+boxplot(sensitivity_value1,sensitivity_value2,sensitivity_value3,sensitivity_value4,xlab="Modelli", ylab="Sensitività")
 
-# Run the application
-shinyApp(ui = ui, server = server)
 ```
+
+
+
+

@@ -8,7 +8,7 @@ Il dataset è composto da 1 file, contenente una versione anonimizzata di alcuni
 
 ## Struttura della Cartella
 
-- `Dropout20240226_IngMate.xlsx`: Il database che abbiamo utilizzato.
+- `Dropout20240226_IngMate.xlsx`: Il database che abbiamo utilizzato, non includo. Nel caso ne aveste bisogno contattare la professoressa Annamaria Paganoni e la dottoressa Chiara Masci.
 - `Legend.md` : Un file Markdown creato per esplicitare le variabili presenti nel dataset di riferimento.
 
 ## Utilizzo del Dataset

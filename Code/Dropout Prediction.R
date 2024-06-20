@@ -1,17 +1,9 @@
----
-title: "Regressione Logistica Senza Parametro Temporale"
-author: "Alessandro Wiget, Sofia Sannino, Pietro Masini, Giulia Riccardi"
-date: "`r Sys.Date()`"
-output: github_document
----
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+#Regressione Logistica Senza Parametro Temporale
+#Alessandro Wiget, Sofia Sannino, Pietro Masini, Giulia Riccardi
 
 ## Librerie
 
-```{r, results='hide', warning= FALSE, message=FALSE}
 library(readxl)
 library(dplyr)
 library( faraway )
@@ -23,40 +15,29 @@ library(rgl)
 library(corrplot)
 library(pscl)
 library(plm)
-#library(glmulti)
 library(AICcmodavg)
-#library(glmtoolbox)
 library(caret)
 library(pROC)
 library(e1071)
 library(stats)
-setwd("C:/Users/lenovo/OneDrive/Documenti/R")
-```
+setwd("C:/Users/alewi/Documents/University/HKUST & PoliMi/II Semestre/Inferenza Statistica/Progetto/Code")
 
-## Il Dataset
+# Il Dataset
 
-Prima di tutto definiamo la working directory:
+#Prima di tutto definiamo la working directory:
+  
+#IMPORTANTE! Cambiare la directoy a seconda del pc.
 
-IMPORTANTE! Cambiare la directoy a seconda del pc.
+#Importiamo il Dataset, presente nella cartella `Dati/`:
 
-Importiamo il Dataset, presente nella cartella `Dati/`:
-
-```{r}
-setwd("C:/Users/lenovo/OneDrive/Documenti/R")
+setwd("C:/Users/alewi/Documents/University/HKUST & PoliMi/II Semestre/Inferenza Statistica/Progetto/Code")
 library(readxl)
-df <- read_excel("Dropout20240226_IngMate.xlsx")
-#View(df)
-```
+df <- read_excel("../Dati/Dropout20240226_IngMate.xlsx")
+View(df)
 
-## Analisi esplorativa
 
--   L'obiettivo è quello di prevedere se una persona lascerà l'università o meno, basandosi principalemente sui dati che caratterizzano la sua carriera al primo semestre del primo anno. E' infatti ragionevole pensare che tali dati possano contenere elementi predittivi rilevanti, ai fini di un'azione mirata a limitare il dropout, il che avviene ragionevolemente all'inizio della carriera accademica.
+# Analisi esplorativa
 
--   Dato che la variabile dipendente è bernoulliana $\hat{y}_i \in \{0,1\} \lor \hat{p}_i \in [0,1]$, sappiamo che dovremo costruire un modello di regressione logistica.
-
--   Consideriamo perciò solo gli studenti con carriere terminate, cioè o che si sono laureati o che hanno abbandonato il corso di studio.
-
-```{r}
 
 #togliamo covariate inutili, togliamo gli attivi dei quali non sappiamo ancora se hanno droppato o no.
 df$career_anonymous_id <- NULL
@@ -78,13 +59,7 @@ df$stud_admis_convent_start_dt <- NULL
 df$stud_career_end_ay <-NULL
 #teniamo solo le persone che non sono attive e delle quali sappiamo già se hanno droppato o no
 filtered_df <- df %>% filter(stud_career_status != 'A')
-```
 
--   Selezioniamo inizialmente dal dataset le variabili numeriche.
-
--   In particolare togliamo la variabile `career_time` che indica i giorni per cui si è stati iscritti al poli, poichè risulta equivalente a livello interpretativo alla variabile bernoulliana del dropout, dando in questo modo problemi a livello di previsione, oltre ad essere in determinati casi fuori contesto per quanto riguarda lo scopo della ricerca.
-
-```{r}
 #selezioniamo solo le variabili numeriche
 numerical_vars <- sapply(filtered_df, is.numeric) 
 numerical_df <- filtered_df[, numerical_vars]
@@ -99,20 +74,15 @@ numerical_df = numerical_df[which(!((numerical_df$career_time_conv > 1300)| nume
 #numerical_df = numerical_df[which(!(numerical_df$career_time_conv<0)),]
 numerical_df$career_time_conv <- NULL
 
-#View(numerical_df)
-```
+View(numerical_df)
 
-Osserviamo se esistono correlazioni significative fra i dati numerici:
-
-```{r}
 X = numerical_df[, -3]
 X=X[,-1]
 corrplot(cor(X), method='color')
-```
 
-Notiamo una correlazione importante tra `exa_cfu_pass` ovvero i cfu sostenuti e `exa_grade_average` e tra media esami e tentativi medi esami.
 
-```{r}
+#Notiamo una correlazione importante tra `exa_cfu_pass` ovvero i cfu sostenuti e `exa_grade_average` e tra media esami e tentativi medi esami.
+
 min(numerical_df$exa_cfu_pass)
 max(numerical_df$exa_cfu_pass)
 
@@ -133,19 +103,15 @@ y
 
 #Aggiungere legenda
 plot( numerical_df$exa_cfu_pass, numerical_df$dropout, pch = ifelse( numerical_df$dropout  == 1, 3, 4 ),
-col = ifelse( numerical_df$dropout== 1, 'forestgreen', 'red' ),
-xlab = 'cfu', ylab = 'dropout', main = 'cfu vs. dropout', lwd = 2, cex = 1.5 )
+      col = ifelse( numerical_df$dropout== 1, 'forestgreen', 'red' ),
+      xlab = 'cfu', ylab = 'dropout', main = 'cfu vs. dropout', lwd = 2, cex = 1.5 )
 points( mid, y, col = "blue", pch = 16 )
 
-```
 
-Notiamo qualitativamente che al diminuire dei cfu acquisiti nel primo semestre aumenta la probabilità di dropout.
+# La Prima Regressione Logistica
 
-## La Prima Regressione Logistica
-
-Effettuiamo una prima regressione logistica fra le variabili numeriche del dataset:
-
-```{r}
+#Effettuiamo una prima regressione logistica fra le variabili numeriche del dataset:
+  
 # Create a formula for linear model
 formula_num <- as.formula(paste("dropout ~", paste(names(numerical_df[,-which(names(numerical_df) == "dropout")]), collapse = " + ")))
 
@@ -154,31 +120,7 @@ model_init <- glm(formula_num, data = numerical_df, family=binomial( link = logi
 
 # Print the summary of the model
 summary(model_init)
-```
 
-Le covariate con p-value rilevanti sono:
-
--   exa_cfu_pass: il numero di cfu sostenuti nel primo semestre
-
--   exa_grade_average: la media dei voti del primo semestre
-
--   leggermente rilevante anche highschool_grade
-
-Notiamo inoltre che il modello presenta molte covariate non significative, pertanto operiamo una ricerca backward per eliminare quelle non rilevanti.
-
-Valutiamo l'Odd Ratio per un incremento di 10 cfu e di un punto di media e valutiamo di quanto varia il rischio di dropout.
-
-$\text{Aggiungere formula odds ratio}$
-
-```{r}
-exp(10*coef(model_init)[5])
-
-exp(coef(model_init)[6])
-```
-
-Notiamo che il rischio di dropout diminuisce dell'ottanta percento all'aumentare di 10 cfu e allo stesso modo diminuisce del 10 percento all'aumentare di un punto di media.
-
-```{r}
 covariate = paste("dropout ~", paste(names(numerical_df[,-which(names(numerical_df) == "dropout")]), collapse = " + "))
 
 #Covariate rimosse durante la semplificazione, in ordine
@@ -226,40 +168,21 @@ drop1(model_back_2, test="Chisq")
 AIC(model_back)
 #-------------------------------
 
-```
-
-Il modello risultante presenta due covariate numeriche significative: la media esami relativa al primo semestre e i cfu sostenuti al primo semestre. Abbiamo anche una significatività meno rilevante di highschool_grade (al 5%).
-
-```{r}
 anova(model_back_2, model_back, test="Chisq")
-```
-Il test anova ci dà un p-value basso, perciò effettivamente i due modelli sono diversi e il secondo, quello con una covariata in più, porta una significatività intrinseca rilevante.
-
-```{r}
 
 mod=glm("dropout~1+exa_cfu_pass+exa_grade_average+highschool_grade",data = numerical_df, family=binomial)
 summary(mod)
 
 
-```
-
 ## Introduzione Interazioni fra Variabili Numeriche
 
-Prima di procedere con l'analisi delle variabili categoriche cerchiamo di comprendere se le aggiunte di interazioni fra variabili numeriche ci permettono di migliorare il nostro modello. Osservando la matrice delle covariate costruita all'inizio si rileva che `exa_cfu_pass` e `exa_grade_average` sono molto correlate, pertanto aggiungo il termine di interazione al modello e successivamente valuto l'equivalenza o meno dei due modelli tramite il test ANOVA ($\chi^2$):
-
-```{r}
 mod_int = update(mod, . ~ . + exa_cfu_pass*exa_grade_average)
 
 summary(mod_int)
 anova(mod,mod_int)
-```
-Il p-value della covariata relativa a `exa_cfu_pass` è alto pertanto il termine di interazione è da escludere in quanto non aggiunge nulla al modello.
 
 ## Introduzione delle Variabili Categoriche
 
-Rendiamo tutte le variabili del Dataset di tipo `factor` affinchè siano utilizzabili nella regressione logistica.
-
-```{r}
 MODEL = mod
 
 filtered_df <- df %>% filter(stud_career_status != 'A')
@@ -282,12 +205,8 @@ cat_no_lev_df$dropped_on_180<-NULL
 cat_no_lev_df$stud_career_status <-NULL
 
 
-#View(cat_no_lev_df)
-```
+View(cat_no_lev_df)
 
-Aggiorno il modello considerando le variabili categoriche, facendo un test di backward. Consideriamo una soglia del 5 percento.
-
-```{r}
 model_cat = glm("dropout ~ 1 + 
     exa_cfu_pass + exa_grade_average  +stud_gender + previousStudies + origins + income_bracket_normalized_on4+ highschool_grade", data=cat_no_lev_df, family=binomial)
 
@@ -308,25 +227,8 @@ drop1(model_cat, test="Chisq")
 
 summary(model_cat)
 
-```
-
-Le variabili categoriche non risultano rilevanti nel modello, pertanto rimane il modello di partenza con le sole varibaili numeriche rilevate in precedenza.
-
 ## Confusion Matrix e ROC Curve
 
-Eseguiamo ora la classificazione.
-
--   Computiamo la confusion matrix.
-
--   Splittiamo il dataset in due parti: il training set che comprende l'80% dei dati, il test set il restante 20%. Rifittiamo il modello sul training set e facciamo predizione sul test set.
-
--   Costruiamo la curva ROC e valutiamo la soglia ottimale.
-
-```{r}
-
-
-# Assume you have a dataframe data with predictors and a response variable
-# split the data into train and test
 set.seed(123)
 trainIndex <- createDataPartition(cat_no_lev_df$dropout, p = 0.8, 
                                   list = FALSE, 
@@ -335,45 +237,29 @@ trainIndex <- createDataPartition(cat_no_lev_df$dropout, p = 0.8,
 train <- cat_no_lev_df[ trainIndex,]
 test  <- cat_no_lev_df[-trainIndex,]
 
-# Fit the logistic regression model
 fit <- glm("dropout ~ 1 + exa_cfu_pass + exa_grade_average + highschool_grade", data = train, family = binomial)
 
-# Make predictions on the test set
 predicted_probs <- predict(fit, newdata = test, type = "response")
 
-
-# Compute the ROC curve
 roc_obj <- roc(test$dropout, predicted_probs)
 
-# Plot the ROC curve
 plot(roc_obj, print.auc = TRUE)
 
-# Compute the AUC
 auc <- auc(roc_obj)
 print(auc)
 
 #trovare soglia opt
 best=coords(roc_obj, "best", ret="threshold", best.method="youden") #best circa 0.2
 print(best)
-#
+
 test$dropout=as.factor(test$dropout)
 
-# Compute the confusion matrix
 predicted_classes <- ifelse(predicted_probs > as.numeric(best), 1, 0)
 predicted_classes=as.factor(predicted_classes)
 
 cm <- confusionMatrix(predicted_classes, test$dropout)
 print(cm)
 
-```
-
-L'indice AUC, la sensitività, la specificità e la precisione sono tutti valori più che soddisfacenti.
-
-## Predizione sugli studenti in corso:
-
-Costruiamo il dataset degli studenti attivi, quindi quelli ancora in corso:
-
-```{r}
 attivi_df <- df %>% filter(stud_career_status == 'A')
 attivi_df$dropout <- NULL
 
@@ -384,20 +270,11 @@ attivi_df = attivi_df[which((attivi_df$career_start_ay==2023)|(attivi_df$career_
 #attivi_df$stud_gender = factor(attivi_df$stud_gender, ordered=F)
 #attivi_df$previousStudies = factor(attivi_df$previousStudies, ordered=F)
 
-#View(attivi_df)
-```
+View(attivi_df)
 
-Il modello ottimale è il seguente:
-
-```{r}
 model_opt = glm("dropout ~ 1 + exa_cfu_pass + exa_grade_average ", data = train, family=binomial)
 summary(model_opt)
 
-```
-
-Eseguiamo la predizione sugli studenti attivi presenti nel nostro modello, utilizzando il valore di threshold precedentemente trovato:
-
-```{r}
 predizione <- predict(model_opt, newdata = attivi_df, type = "response")
 
 binary_output <- ifelse(predizione > round(as.numeric(best),1), 1, 0)
@@ -406,42 +283,36 @@ attivi_df$dropout_prediction = binary_output
 
 sum(binary_output)/length(binary_output)
 
-#View(attivi_df)
-```
+View(attivi_df)
 
-La probabilità di dropout stimata è del 37% circa, che sovrastima quella rilevata sugli studenti a carriera conclusa (mean(predicted_probs)=25.63 %). Questo è ragionevole considerando che l'obiettivo è prevenire il dropout, quindi in un'ottica di prevenzione, una sovrastima è accettabile.
+#K-fold cross Validation
 
-```{r}
-
-
-set.seed(123) # For reproducibility
-# Define number of folds
+set.seed(123) 
+# definire il numero di folds
 K <- 10
 sensitivity_value1=rep(0,10)
 sensitivity_value2=rep(0,10)
 sensitivity_value3=rep(0,10)
 sensitivity_value4=rep(0,10)
-# Shuffle the data
+
 cat_no_lev_df <- cat_no_lev_df[sample(nrow(cat_no_lev_df)),]
-#View(cat_no_lev_df)
-# Create K equally sized folds
+View(cat_no_lev_df)
 folds <- cut(seq(1, nrow(cat_no_lev_df)), breaks=K, labels=FALSE)
 
 
-# Perform K-fold cross-validation
+# Cross validazione
 for(i in 1:K) {
-  # Segment the data by fold using the which() function
+  # segmentazione dei dati
   test_indices <- which(folds == i, arr.ind=TRUE)
   test_data <- cat_no_lev_df[test_indices, ]
   train_data <- cat_no_lev_df[-test_indices, ]
-  # Train your model (using a simple logistic regression for this example)
+  # Allenare il modello
  model1 = glm("dropout ~ 1 + exa_cfu_pass + exa_grade_average ", data = train_data, family = binomial)
 model2 = glm("dropout ~ 1 + exa_cfu_pass + exa_grade_average+highschool_grade", data = train_data, family = binomial)
 model3 = glm("dropout ~ 1 + exa_cfu_pass + exa_grade_average + highschool_grade + exa_cfu_pass*exa_grade_average", data = train_data, family = binomial)
 model4 = glm("dropout ~ 1 + exa_cfu_pass + exa_grade_average + previousStudies + highschool_grade", data=train_data, family=binomial)
 
   
-  # Make predictions on the test data
   predictions1 <- predict(model1, test_data, type="response")
   predictions2 <- predict(model2, test_data, type="response")
   predictions3 <- predict(model3, test_data, type="response")
@@ -474,8 +345,6 @@ model4 = glm("dropout ~ 1 + exa_cfu_pass + exa_grade_average + previousStudies +
   sensitivity_value4[i] <- cm4$byClass["Sensitivity"]
 }
 boxplot(sensitivity_value1,sensitivity_value2,sensitivity_value3,sensitivity_value4,xlab="Modelli", ylab="Sensitività")
-
-```
 
 
 
